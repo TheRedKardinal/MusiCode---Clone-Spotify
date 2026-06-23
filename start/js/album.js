@@ -25,11 +25,78 @@
 
 const player = initPage("home");
 
-const albumHero  = document.querySelector("#album-hero");
-const tracklist  = document.querySelector("#tracklist");
+const albumHero = document.querySelector("#album-hero");
+const tracklist = document.querySelector("#tracklist");
 
 const loadAlbum = async () => {
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (!id) {
+    albumHero.textContent = "Album non trovato";
+    return;
+  }
   // TODO: implementare come da elenco sopra
+  const dati = await fetchJSON(`${API_BASE}/lookup?id=${id}&entity=song`);
+
+  const albumRaw = dati.results[0];
+  const tracksRaw = dati.results.slice(1);
+
+  const album = new Album(albumRaw);
+  const tracks = tracksRaw.map((raw) => new Track(raw));
+
+  const cover = document.createElement("div");
+  cover.classList.add("album-cover");
+
+  const img = document.createElement("img");
+  img.src = bigArt(album.cover);
+  img.alt = album.title;
+
+  cover.appendChild(img);
+
+  const meta = document.createElement("div");
+  meta.classList.add("hero-meta");
+
+  const kicker = document.createElement("p");
+  kicker.classList.add("hero-kicker");
+  kicker.textContent = "ALBUM";
+
+  const title = document.createElement("h1");
+  title.classList.add("hero-title");
+  title.textContent = album.title;
+
+  const sub = document.createElement("p");
+  sub.classList.add("hero-sub");
+  sub.textContent = `${album.artist} ${new Date(album.releaseDate).getFullYear()} . ${album.trackCount} brani`;
+
+  meta.appendChild(kicker);
+  meta.appendChild(title);
+  meta.appendChild(sub);
+
+  albumHero.appendChild(cover);
+  albumHero.appendChild(meta);
+
+  tracks.forEach((track, index) => {
+    const row = document.createElement("div");
+    row.classList.add("track-row");
+
+    const num = document.createElement("span");
+    num.classList.add("track-num");
+    num.textContent = index + 1;
+
+    const titleEl = document.createElement("span");
+    titleEl.classList.add("track-title");
+    titleEl.textContent = track.title;
+
+    const time = document.createElement("span");
+    time.classList.add("track-time");
+    time.textContent = formatTime(track.durationMs);
+
+    row.appendChild(num);
+    row.appendChild(titleEl);
+    row.appendChild(time);
+    tracklist.appendChild(row);
+
+    row.addEventListener("click", () => player.play(track));
+  });
 };
 
 loadAlbum();
