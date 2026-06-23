@@ -346,7 +346,7 @@ const renderSidebar = (activePage) => {
     <p class="sidebar-section-title">I tuoi preferiti</p>
     <ul class="sidebar-list" id="sidebar-favs"></ul>
   `;
-  // TODO (opzionale): popola #sidebar-favs con i titoli dei preferiti
+  // TODO (opzionale): popola #sidebar-favs con i titoli dei preferitii
 };
 
 /* ============================ 7. Inizializzazione ============================ */
