@@ -31,6 +31,7 @@ const gridTracks = document.querySelector("#grid-tracks");
 const gridAlbums = document.querySelector("#grid-albums");
 const gridArtists = document.querySelector("#grid-artists");
 
+// Si aspetta un'istanza di Track con: id, title, artist, cover, previewUrl (contratto definito in common.js)
 const renderTrackCard = (track) => {
   const cardDiv = document.createElement("div");
   cardDiv.classList.add("card");
@@ -55,6 +56,8 @@ const renderTrackCard = (track) => {
   cardPlay.textContent = "▶";
   cardPlay.classList.add("card-play");
 
+  // Click su tutta la card (non solo sul bottone ▶) per riprodurre il brano:
+  // cardPlay non ha un suo listener separato, l'evento sale (bubbling) da lui a cardDiv.
   cardDiv.addEventListener("click", (e) => {
     e.preventDefault();
     player.play(track);
@@ -69,6 +72,8 @@ const renderTrackCard = (track) => {
   return cardDiv;
 };
 
+// Si aspetta un'istanza di Album con: id, title, artist, cover (contratto definito in common.js)
+// Niente bottone play: un album si apre, non si riproduce direttamente.
 const renderAlbumCard = (album) => {
   const cardDiv = document.createElement("div");
   cardDiv.classList.add("card");
@@ -89,6 +94,7 @@ const renderAlbumCard = (album) => {
   cardSub.classList.add("card-sub");
   cardSub.textContent = album.artist;
 
+  // Click sulla card -> naviga alla pagina di dettaglio album (passa l'id via query string)
   cardDiv.addEventListener("click", (e) => {
     e.preventDefault();
     window.location.href = "album.html?id=" + album.id;
