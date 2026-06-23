@@ -430,7 +430,27 @@ const renderSidebar = (activePage) => {
     <p class="sidebar-section-title">I tuoi preferiti</p>
     <ul class="sidebar-list" id="sidebar-favs"></ul>
   `;
-  // TODO (opzionale): popola #sidebar-favs con i titoli dei preferiti   // Da fare
+  const favsList = sidebar.querySelector("#sidebar-favs");
+  if (favsList) {
+    const favs = getFavourites();
+    if (favs.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "Nessun preferito";
+      li.style.fontStyle = "italic";
+      favsList.appendChild(li);
+    } else {
+      favs.forEach(track => {
+        const li = document.createElement("li");
+        li.textContent = track.title || "—";
+        li.title = `${track.title} — ${track.artist}`;
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => {
+          if (window.player) window.player.play(track);
+        });
+        favsList.appendChild(li);
+      });
+    }
+  }
 };
 
 /* ============================ 7. Inizializzazione ============================ */
