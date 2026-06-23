@@ -23,17 +23,92 @@
 
 const player = initPage("search");
 
-const input        = document.querySelector("#search-input");
-const rowTracks    = document.querySelector("#row-tracks");
-const rowAlbums    = document.querySelector("#row-albums");
-const rowArtists   = document.querySelector("#row-artists");
-const gridTracks   = document.querySelector("#grid-tracks");
-const gridAlbums   = document.querySelector("#grid-albums");
-const gridArtists  = document.querySelector("#grid-artists");
+const input = document.querySelector("#search-input");
+const rowTracks = document.querySelector("#row-tracks");
+const rowAlbums = document.querySelector("#row-albums");
+const rowArtists = document.querySelector("#row-artists");
+const gridTracks = document.querySelector("#grid-tracks");
+const gridAlbums = document.querySelector("#grid-albums");
+const gridArtists = document.querySelector("#grid-artists");
 
-const renderTrackCard  = (track)  => { /* TODO */ };
-const renderAlbumCard  = (album)  => { /* TODO */ };
-const renderArtistCard = (artist) => { /* TODO */ };
+const renderTrackCard = (track) => {
+  const cardDiv = document.createElement("div");
+  cardDiv.classList.add("card");
+
+  const imageWrap = document.createElement("div");
+  imageWrap.classList.add("card-image-wrap");
+  const img = document.createElement("img");
+  img.src = track.cover;
+  img.alt = "Cover della track";
+
+  imageWrap.appendChild(img);
+
+  const cardTitle = document.createElement("p");
+  cardTitle.classList.add("card-title");
+  cardTitle.textContent = track.title;
+
+  const cardSub = document.createElement("p");
+  cardSub.classList.add("card-sub");
+  cardSub.textContent = track.artist;
+
+  const cardPlay = document.createElement("button");
+  cardPlay.textContent = "▶";
+  cardPlay.classList.add("card-play");
+
+  cardDiv.addEventListener("click", (e) => {
+    e.preventDefault();
+    player.play(track);
+  });
+
+  cardDiv.appendChild(imageWrap);
+
+  cardDiv.appendChild(cardTitle);
+  cardDiv.appendChild(cardSub);
+  cardDiv.appendChild(cardPlay);
+
+  return cardDiv;
+};
+
+const renderAlbumCard = (album) => {
+  const cardDiv = document.createElement("div");
+  cardDiv.classList.add("card");
+
+  const imageWrap = document.createElement("div");
+  imageWrap.classList.add("card-image-wrap");
+  const img = document.createElement("img");
+  img.src = track.cover;
+  img.alt = "Cover della track";
+
+  imageWrap.appendChild(img);
+
+  const cardTitle = document.createElement("p");
+  cardTitle.classList.add("card-title");
+  cardTitle.textContent = track.title;
+
+  const cardSub = document.createElement("p");
+  cardSub.classList.add("card-sub");
+  cardSub.textContent = track.artist;
+
+  const cardPlay = document.createElement("button");
+  cardPlay.textContent = "▶";
+  cardPlay.classList.add("card-play");
+
+  cardDiv.addEventListener("click", (e) => {
+    e.preventDefault();
+    player.play(track);
+  });
+
+  cardDiv.appendChild(imageWrap);
+
+  cardDiv.appendChild(cardTitle);
+  cardDiv.appendChild(cardSub);
+  cardDiv.appendChild(cardPlay);
+
+  return cardDiv;
+};
+const renderArtistCard = (artist) => {
+  /* TODO */
+};
 
 const doSearch = async (term) => {
   // TODO: implementare come da elenco sopra (Promise.all)
