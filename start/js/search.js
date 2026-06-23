@@ -173,10 +173,22 @@ const doSearch = async (term) => {
       fetchJSON(urlAlbums),
       fetchJSON(urlArtists),
     ]);
-
     
+    dataTracks.results.forEach(track => {
+      const trackFatta = {
+         id: track.id,
+         title: track.title,
+         artist: track.artist,
+         cover: track.cover,
+         previewUrl: track.url
+      }
+
+      
+    });
   }
 };
+
+doSearch();
 
 const debouncedSearch = debounce(doSearch, 400);
 
