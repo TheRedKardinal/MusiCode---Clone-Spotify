@@ -39,7 +39,7 @@ const renderTrackCard = (track) => {
   imageWrap.classList.add("card-image-wrap");
   const img = document.createElement("img");
   img.src = track.cover;
-  img.alt = "Cover della track";
+  img.alt = "Cover di " + track.title;
 
   imageWrap.appendChild(img);
 
@@ -76,33 +76,28 @@ const renderAlbumCard = (album) => {
   const imageWrap = document.createElement("div");
   imageWrap.classList.add("card-image-wrap");
   const img = document.createElement("img");
-  img.src = track.cover;
-  img.alt = "Cover della track";
+  img.src = album.cover;
+  img.alt = "Cover di " + album.title;
 
   imageWrap.appendChild(img);
 
   const cardTitle = document.createElement("p");
   cardTitle.classList.add("card-title");
-  cardTitle.textContent = track.title;
+  cardTitle.textContent = album.title;
 
   const cardSub = document.createElement("p");
   cardSub.classList.add("card-sub");
-  cardSub.textContent = track.artist;
-
-  const cardPlay = document.createElement("button");
-  cardPlay.textContent = "▶";
-  cardPlay.classList.add("card-play");
+  cardSub.textContent = album.artist;
 
   cardDiv.addEventListener("click", (e) => {
     e.preventDefault();
-    player.play(track);
+    window.location.href = "album.html?id=" + album.id;
   });
 
   cardDiv.appendChild(imageWrap);
 
   cardDiv.appendChild(cardTitle);
   cardDiv.appendChild(cardSub);
-  cardDiv.appendChild(cardPlay);
 
   return cardDiv;
 };
