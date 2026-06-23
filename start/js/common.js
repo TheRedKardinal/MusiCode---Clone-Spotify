@@ -208,8 +208,31 @@ class Player {
     this.audio = document.querySelector("#audio-element");
     this.currentTrack = null;
     this.isPlaying = false;
-    // TODO: salva i riferimenti agli elementi del footer (.player-cover, .player-title, ...)
-    // TODO: aggancia eventi audio (timeupdate, ended)
+
+    // riferimenti agli elementi del footer (popolati in mount(), dopo l'innerHTML)
+    this.elCoverImg = null;
+    this.elTitle = null;
+    this.elArtist = null;
+    this.elBtnToggle = null;
+    this.elProgressFill = null;
+    this.elTimeCurrent = null;
+    this.elTimeTotal = null;
+    this.elVolumeFill = null;
+
+    this.audio.addEventListener("timeupdate", () => {
+      if (!this.audio.duration) return;
+      const percent = (this.audio.currentTime / this.audio.duration) * 100;
+      if (this.elProgressFill) this.elProgressFill.style.width = `${percent}%`;
+      if (this.elTimeCurrent)
+        this.elTimeCurrent.textContent = formatTime(
+          this.audio.currentTime * 1000,
+        );
+    });
+
+    this.audio.addEventListener("ended", () => {
+      this.isPlaying = false;
+      if (this.elBtnToggle) this.elBtnToggle.textContent = "▶";
+    });
   }
 
   mount() {
@@ -248,9 +271,36 @@ class Player {
         </div>
       </div>
     `;
+    this.elCoverImg = document.querySelector("#player-cover-img");
+    this.elTitle = document.querySelector("#player-title");
+    this.elArtist = document.querySelector("#player-artist");
+    this.elBtnToggle = document.querySelector("#btn-toggle");
+    this.elProgressFill = document.querySelector("#progress-fill");
+    this.elTimeCurrent = document.querySelector("#time-current");
+    this.elTimeTotal = document.querySelector("#time-total");
+    this.elVolumeFill = document.querySelector("#volume-fill");
 
-    // TODO: aggancia eventi click su #btn-toggle, click su #progress-bar (seek),   //da fare
-    //       click su #volume-bar (setVolume), volume iniziale (this.audio.volume = 0.8).
+    // Click play/pausa
+this.elBtnToggle.addEventListener("click", () => this.togglePlay());
+    // Click sulla progress bar → seek
+  const progressBar = document.querySelector("#progress-bar");
+progressBar.addEventListener("click", (e) => {
+  const percent = e.offsetX / progressBar.clientWidth; // 0..1 dove clicchi
+  this.seek(percent);
+});
+
+    // Click sulla barra volume → setVolume
+    const volumeBar = document.querySelector("#volume-bar");
+volumeBar.addEventListener("click", (e) => {
+  const v = e.offsetX / volumeBar.clientWidth; // 0..1
+  this.setVolume(v);
+});
+
+    this.audio.volume = 0.8;
+  }
+
+    // TODO: salva i riferimenti agli elementi del footer (.player-cover, .player-title, ...)
+    // TODO: aggancia eventi audio (timeupdate, ended)
   }
 
   play(track) {
