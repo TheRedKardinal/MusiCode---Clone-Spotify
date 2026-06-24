@@ -118,6 +118,14 @@ const renderArtistCard = (artist) => {
   const imageWrap = document.createElement("div");
   imageWrap.classList.add("card-image-wrap", "round");
 
+  // L'API iTunes (entity=musicArtist) non fornisce artwork: usiamo un'immagine
+  // di default uguale per tutti gli artisti, con il viso centrato (vedi CSS).
+  const img = document.createElement("img");
+  img.src = "assets/artist-default.jpeg";
+  img.alt = "Artista " + artist.name;
+  img.classList.add("artist-default-img");
+  imageWrap.appendChild(img);
+
   const cardTitle = document.createElement("p");
   cardTitle.classList.add("card-title");
   cardTitle.textContent = artist.name;
