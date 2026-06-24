@@ -282,6 +282,12 @@ class Player {
     // Click play/pausa
     this.elBtnToggle.addEventListener("click", () => this.togglePlay());
     // Click sulla progress bar → seek
+
+    const btnPrev = document.querySelector("#btn-prev");
+    const btnNext = document.querySelector("#btn-next");
+    if (btnPrev) btnPrev.addEventListener("click", () => this.playPrev());
+    if (btnNext) btnNext.addEventListener("click", () => this.playNext());
+
     const progressBar = document.querySelector("#progress-bar");
     progressBar.addEventListener("click", (e) => {
       const percent = e.offsetX / progressBar.clientWidth; // 0..1 dove clicchi
@@ -314,6 +320,8 @@ class Player {
     } catch (errore) {
       console.error("Impossibile riprodurre il brano:", errore);
       this.isPlaying = false;
+      this.queue = [];
+      this.currentIndex = -1;
     }
 
     // 4) aggiorna UI footer
@@ -371,6 +379,28 @@ class Player {
     if (!this.audio.duration) return;
     this.audio.currentTime =
       this.audio.duration * Math.min(1, Math.max(0, percent));
+  }
+  setQueue(tracks, startIndex) {
+    this.queue = tracks;
+    this.currentIndex = startIndex;
+    this.play(tracks[startIndex]);
+  }
+
+  playNext() {
+    if (!this.queue.length) return;
+    this.currentIndex = (this.currentIndex + 1) % this.queue.length;
+    this.play(this.queue[this.currentIndex]);
+  }
+
+  playPrev() {
+    if (!this.queue.length) return;
+    if (this.audio.currentTime > 3) {
+      this.seek(0);
+      return;
+    }
+    this.currentIndex =
+      (this.currentIndex - 1 + this.queue.length) % this.queue.length;
+    this.play(this.queue[this.currentIndex]);
   }
 }
 
@@ -456,7 +486,7 @@ const renderSidebarFavs = () => {
     return;
   }
 
-  favs.forEach((track) => {
+  favs.forEach((track, index) => {
     const li = document.createElement("li");
     li.style.cursor = "pointer";
     li.style.display = "flex";         // Allinea immagine e testo sulla stessa riga
@@ -485,7 +515,7 @@ const renderSidebarFavs = () => {
     li.appendChild(textSpan);
 
     li.addEventListener("click", () => {
-      if (window.player) window.player.play(track);
+      if (window.player) window.player.setQueue(favs, index);
     });
     favsList.appendChild(li);
   });
