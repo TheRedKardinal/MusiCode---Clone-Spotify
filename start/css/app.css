@@ -276,7 +276,7 @@ button {
 /* ============================ Card ============================ */
 
 .card {
-  background: var(--bg-elev);
+  background: transparent;
   border-radius: var(--radius-md);
   padding: 14px;
   transition: background 0.18s ease;
@@ -303,6 +303,11 @@ button {
 }
 .card-image-wrap.round {
   border-radius: 50%;
+}
+/* Immagine default artista: zoom sul viso (sta nella parte alta dell'immagine) */
+.artist-default-img {
+  object-position: center 22%;
+  transform: scale(1.6);
 }
 .card-title {
   font-weight: 700;
