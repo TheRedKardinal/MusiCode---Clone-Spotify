@@ -589,6 +589,9 @@ button {
 .btn-ctrl:hover {
   color: var(--text-primary);
 }
+.btn-ctrl.btn-active {
+  color: #1db954;
+}
 .btn-play {
   width: 36px;
   height: 36px;
