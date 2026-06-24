@@ -58,6 +58,25 @@ const renderRow = (rowTitle, tracks) => {
     card.appendChild(pTitle);
     card.appendChild(pArtist);
 
+    card.addEventListener("click", () => player.play(track));
+
+    const btnPlay = document.createElement("button");
+    btnPlay.classList.add("card-play");
+    btnPlay.textContent = "▶";
+    btnPlay.addEventListener("click", (e) => {
+      e.stopPropagation();
+      player.play(track);
+    });
+    card.appendChild(btnPlay);
+
+    const btnFav = document.createElement("button");
+    btnFav.classList.add("card-fav");
+    btnFav.textContent = "♥";
+    btnFav.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleFavourite(track);
+    });
+    card.appendChild(btnFav);
     div.appendChild(card);
   });
 
@@ -86,12 +105,12 @@ const loadHome = async () => {
   const history = getHistory();
   const favourites = getFavourites();
 
+  if (history.length > 0) renderRow("Riprodotti di recente", history);
+  if (favourites.length > 0) renderRow("I tuoi preferiti", favourites);
+
   renderRow("Suggerimenti pop", traccePop);
   renderRow("Suggerimenti rock", tracceRock);
   renderRow("Suggerimenti hits", tracceHits);
-
-  if (history.length > 0) renderRow("Riprodotti di recente", history);
-  if (favourites.length > 0) renderRow("I tuoi preferiti", favourites);
 };
 
 loadHome();
