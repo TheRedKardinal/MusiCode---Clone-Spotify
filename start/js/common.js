@@ -571,8 +571,8 @@ const renderSidebar = (activePage) => {
       <span class="brand-text">usiCode</span>
     </div>
     <nav class="sidebar-nav">
-      <a href="index.html"  data-page="home"   ${activePage === "home" ? 'class="active"' : ""}><span class="ico">🏠</span><span>Home</span></a>
-      <a href="search.html" data-page="search" ${activePage === "search" ? 'class="active"' : ""}><span class="ico">🔍</span><span>Cerca</span></a>
+      <a href="index.html"  data-page="home"   ${activePage === "home" ? 'class="active"' : ""}><span class="ico"><i class="bi bi-house-door-fill"></i></span><span>Home</span></a>
+      <a href="search.html" data-page="search" ${activePage === "search" ? 'class="active"' : ""}><span class="ico"><i class="bi bi-search"></i></span><span>Cerca</span></a>
     </nav>
     <p class="sidebar-section-title">I tuoi preferiti</p>
     <ul class="sidebar-list" id="sidebar-favs"></ul>
