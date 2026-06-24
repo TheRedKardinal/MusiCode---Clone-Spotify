@@ -230,11 +230,19 @@ class Player {
     });
 
     this.audio.addEventListener("ended", () => {
-      this.isPlaying = false;
-      if (this.elBtnToggle) this.elBtnToggle.textContent = "▶";
+      if (this.isRepeating) {
+        this.audio.currentTime = 0;
+        this.audio.play();
+      } else {
+        this.playNext();
+      }
     });
 
     this.previousVolume = 0.8;
+    this.isShuffling = false;
+    this.isRepeating = false;
+    this.queue = [];
+    this.currentIndex = -1;
   }
 
   mount() {
@@ -289,6 +297,21 @@ class Player {
     const btnNext = document.querySelector("#btn-next");
     if (btnPrev) btnPrev.addEventListener("click", () => this.playPrev());
     if (btnNext) btnNext.addEventListener("click", () => this.playNext());
+
+    const btnShuffle = document.querySelector("#btn-shuffle");
+    const btnRepeat = document.querySelector("#btn-repeat");
+
+    if (btnShuffle)
+      btnShuffle.addEventListener("click", () => {
+        this.isShuffling = !this.isShuffling;
+        btnShuffle.classList.toggle("btn-active", this.isShuffling);
+      });
+
+    if (btnRepeat)
+      btnRepeat.addEventListener("click", () => {
+        this.isRepeating = !this.isRepeating;
+        btnRepeat.classList.toggle("btn-active", this.isRepeating);
+      });
 
     const progressBar = document.querySelector("#progress-bar");
     progressBar.addEventListener("click", (e) => {
@@ -365,8 +388,9 @@ class Player {
     document
       .querySelectorAll(".card.is-playing")
       .forEach((c) => c.classList.remove("is-playing"));
-    document.querySelectorAll(`.card[data-track-id="${track.id}"]`)
-      .forEach(c => c.classList.add("is-playing"));
+    document
+      .querySelectorAll(`.card[data-track-id="${track.id}"]`)
+      .forEach((c) => c.classList.add("is-playing"));
   }
 
   togglePlay() {
@@ -413,7 +437,6 @@ class Player {
     if (vol > 0) {
       this.previousVolume = vol;
     }
-
   }
 
   seek(percent) {
@@ -428,8 +451,12 @@ class Player {
   }
 
   playNext() {
-    if (!this.queue.length) return;
-    this.currentIndex = (this.currentIndex + 1) % this.queue.length;
+    if (!this.queue || !this.queue.length) return;
+    if (this.isShuffling) {
+      this.currentIndex = Math.floor(Math.random() * this.queue.length);
+    } else {
+      this.currentIndex = (this.currentIndex + 1) % this.queue.length;
+    }
     this.play(this.queue[this.currentIndex]);
   }
 
@@ -530,26 +557,26 @@ const renderSidebarFavs = () => {
   favs.forEach((track, index) => {
     const li = document.createElement("li");
     li.style.cursor = "pointer";
-    li.style.display = "flex";         // Allinea immagine e testo sulla stessa riga
-    li.style.alignItems = "center";     // Centra verticalmente l'immagine rispetto al testo
-    li.style.gap = "8px";               // Spazio tra l'immagine e il testo
-    li.style.marginBottom = "8px";      // Spazio tra un brano e l'altro
+    li.style.display = "flex"; // Allinea immagine e testo sulla stessa riga
+    li.style.alignItems = "center"; // Centra verticalmente l'immagine rispetto al testo
+    li.style.gap = "8px"; // Spazio tra l'immagine e il testo
+    li.style.marginBottom = "8px"; // Spazio tra un brano e l'altro
     li.title = `${track.title || "Brano"} — ${track.artist || "Artista"}`;
 
     const img = document.createElement("img");
     img.src = track.cover || "https://placehold.co/30x30?text=🎵"; // placeholder se non c'è immagine dispo
     img.alt = track.album || "Album";
-    img.style.width = "30px";          
+    img.style.width = "30px";
     img.style.height = "30px";
-    img.style.borderRadius = "4px";     
+    img.style.borderRadius = "4px";
     img.style.objectFit = "cover";
 
-   /* evita che il testo vada a capo, taglia il testo se troppo lungo e aggiunge i puntini di sospensione */
+    /* evita che il testo vada a capo, taglia il testo se troppo lungo e aggiunge i puntini di sospensione */
 
     const textSpan = document.createElement("span");
     textSpan.textContent = track.title || "—";
-    textSpan.style.whiteSpace = "nowrap";   
-    textSpan.style.overflow = "hidden";      
+    textSpan.style.whiteSpace = "nowrap";
+    textSpan.style.overflow = "hidden";
     textSpan.style.textOverflow = "ellipsis";
 
     li.appendChild(img);
