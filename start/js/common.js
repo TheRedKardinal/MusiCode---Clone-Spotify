@@ -265,10 +265,9 @@ class Player {
       </div>
 
       <div class="player-right">
-        <span>🔊</span>
-        <div class="volume-bar" id="volume-bar">
-          <div class="volume-fill" id="volume-fill" style="width: 80%"></div>
-        </div>
+      <span>🔊</span>
+      <input type="range" 
+        id="volume-slider" class="volume-slider" min="0" max="1" step="0.01" value="0.8" aria-label="Volume"/>
       </div>
     `;
     this.elCoverImg = document.querySelector("#player-cover-img");
@@ -278,84 +277,100 @@ class Player {
     this.elProgressFill = document.querySelector("#progress-fill");
     this.elTimeCurrent = document.querySelector("#time-current");
     this.elTimeTotal = document.querySelector("#time-total");
-    this.elVolumeFill = document.querySelector("#volume-fill");
+    this.elVolumeSlider = document.querySelector("#volume-slider");
 
     // Click play/pausa
-this.elBtnToggle.addEventListener("click", () => this.togglePlay());
+    this.elBtnToggle.addEventListener("click", () => this.togglePlay());
     // Click sulla progress bar → seek
-  const progressBar = document.querySelector("#progress-bar");
-progressBar.addEventListener("click", (e) => {
-  const percent = e.offsetX / progressBar.clientWidth; // 0..1 dove clicchi
-  this.seek(percent);
-});
+    const progressBar = document.querySelector("#progress-bar");
+    progressBar.addEventListener("click", (e) => {
+      const percent = e.offsetX / progressBar.clientWidth; // 0..1 dove clicchi
+      this.seek(percent);
+    });
 
-    // Click sulla barra volume → setVolume
-    const volumeBar = document.querySelector("#volume-bar");
-volumeBar.addEventListener("click", (e) => {
-  const v = e.offsetX / volumeBar.clientWidth; // 0..1
-  this.setVolume(v);
-});
+    // Slider volume → setVolume
+    if (this.elVolumeSlider) {
+      this.elVolumeSlider.addEventListener("input", (e) => {
+        this.setVolume(parseFloat(e.target.value)); // 0..1
+      });
+    }
 
     this.audio.volume = 0.8;
   }
 
   async play(track) {
-  if (!track || !track.previewUrl) return; // niente brano o niente preview -> esci
+    if (!track || !track.previewUrl) return; // niente brano o niente preview -> esci
 
-  // 1) salva brano corrente
-  this.currentTrack = track;
+    // 1) salva brano corrente
+    this.currentTrack = track;
 
-  // 2) sorgente audio = preview del brano
-  this.audio.src = track.previewUrl;
+    // 2) sorgente audio = preview del brano
+    this.audio.src = track.previewUrl;
 
-  // 3) avvia (play() ritorna una Promise: gestisci con try/catch)
-  try {
-    await this.audio.play();
-    this.isPlaying = true;
-  } catch (errore) {
-    console.error("Impossibile riprodurre il brano:", errore);
-    this.isPlaying = false;
-  }
+    // 3) avvia (play() ritorna una Promise: gestisci con try/catch)
+    try {
+      await this.audio.play();
+      this.isPlaying = true;
+    } catch (errore) {
+      console.error("Impossibile riprodurre il brano:", errore);
+      this.isPlaying = false;
+    }
 
-  // 4) aggiorna UI footer
-  if (this.elCoverImg) this.elCoverImg.src = track.cover;
-  if (this.elTitle) this.elTitle.textContent = track.title;
-  if (this.elArtist) this.elArtist.textContent = track.artist;
-  if (this.elTimeTotal) this.elTimeTotal.textContent = formatTime(track.durationMs);
-  if (this.elBtnToggle) this.elBtnToggle.textContent = this.isPlaying ? "⏸" : "▶";
+    // 4) aggiorna UI footer
+    if (this.elCoverImg) this.elCoverImg.src = track.cover;
+    if (this.elTitle) this.elTitle.textContent = track.title;
+    if (this.elArtist) this.elArtist.textContent = track.artist;
+    if (this.elTimeTotal)
+      this.elTimeTotal.textContent = formatTime(track.durationMs);
+    if (this.elBtnToggle)
+      this.elBtnToggle.textContent = this.isPlaying ? "⏸" : "▶";
 
-  // 5) salva in cronologia
-  addToHistory(track);
+    // 5) salva in cronologia
+    addToHistory(track);
 
-  // 6) marca la riga in riproduzione (se siamo in una tracklist)
-  document.querySelectorAll(".track-row.is-playing").forEach((row) => row.classList.remove("is-playing"));
-  const row = document.querySelector(`.track-row[data-track-id="${track.id}"]`);
-  if (row) row.classList.add("is-playing");
+    // 6) marca la riga in riproduzione (se siamo in una tracklist)
+    document
+      .querySelectorAll(".track-row.is-playing")
+      .forEach((row) => row.classList.remove("is-playing"));
+    const row = document.querySelector(
+      `.track-row[data-track-id="${track.id}"]`,
+    );
+    if (row) row.classList.add("is-playing");
   }
 
   togglePlay() {
     if (!this.currentTrack) return;
 
     if (this.audio.paused) {
-      this.audio.play().catch(err => console.warn("Riproduzione bloccata:", err));
+      this.audio
+        .play()
+        .catch((err) => console.warn("Riproduzione bloccata:", err));
       this.isPlaying = true;
     } else {
       this.audio.pause();
       this.isPlaying = false;
     }
-    if (this.elBtnToggle) this.elBtnToggle.textContent = this.isPlaying ? "⏸" : "▶";
+    if (this.elBtnToggle)
+      this.elBtnToggle.textContent = this.isPlaying ? "⏸" : "▶";
     // TODO: alterna play/pause + aggiorna icona del button
   }
 
   setVolume(v) {
     const vol = Math.min(1, Math.max(0, v));
     this.audio.volume = vol;
-    if (this.elVolumeFill) this.elVolumeFill.style.width = `${vol * 100}%`;
+
+    const volumeSlider = document.querySelector("#volume-slider");
+    if (volumeSlider) {
+      volumeSlider.value = vol;
+      const percent = vol * 100;
+      volumeSlider.style.setProperty("--percent", `${percent}%`);
+    }
   }
 
   seek(percent) {
     if (!this.audio.duration) return;
-    this.audio.currentTime = this.audio.duration * Math.min(1, Math.max(0, percent));
+    this.audio.currentTime =
+      this.audio.duration * Math.min(1, Math.max(0, percent));
   }
 }
 
