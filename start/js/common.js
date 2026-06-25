@@ -142,6 +142,7 @@ class Track {
     this.cover = raw.artworkUrl100;
     this.previewUrl = raw.previewUrl;
     this.durationMs = raw.trackTimeMillis;
+    this.genre = raw.primaryGenreName || "";
 
     // TODO: assegna alle property di this i valori da raw
     // (id, title, artist, album, albumId, artistId, cover, previewUrl, durationMs)
