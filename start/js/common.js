@@ -468,9 +468,21 @@ const registerUser = (datiUtente) => {
   );
   return localStorage.setItem(STORAGE_KEY_SESSION, objectUser.username);
 };
+// login dell'utente
+const loginUser = (username, password) => {
+  const accounts = getAccounts();
+  const account = accounts.find((account) => {
+    return account.username === username && account.password === password;
+  });
+  if (account === undefined) {
+    return null;
+  }
+  localStorage.setItem(STORAGE_KEY_SESSION, account.username);
+  return account;
+};
 //funzione di logout
 const logoutUser = () => {
-  return localStorage.removeItem(STORAGE_KEY_USER);
+  return localStorage.removeItem(STORAGE_KEY_SESSION);
 };
 
 /* ============================ 6. Render sidebar ============================ */
