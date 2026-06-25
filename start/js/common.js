@@ -710,6 +710,42 @@ const modal = () => {
     overlayModal.classList.remove("open");
   });
 };
+// funzione di login nella modale di login
+const loginModal = () => {
+  const noLoggedpill = document.querySelector(".no-logged");
+  const [registrati, accedi] = noLoggedpill.querySelectorAll(".user-pill");
+  const loginOverlay = document.getElementById("login-modal");
+  const closeBtn = loginOverlay.querySelector(".register-close");
+  const loginForm = document.getElementById("login-form");
+
+  accedi.addEventListener("click", (e) => {
+    e.stopPropagation();
+    loginOverlay.classList.add("open");
+  });
+
+  closeBtn.addEventListener("click", (e) => {
+    loginOverlay.classList.remove("open");
+  });
+  loginOverlay.addEventListener("click", (e) => {
+    if (e.target === loginOverlay) {
+      loginOverlay.classList.remove("open");
+    }
+  });
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const usernameLogin = document.getElementById("login-username").value;
+    const passwordLogin = document.getElementById("login-password").value;
+
+    const datiLogin = loginUser(usernameLogin, passwordLogin);
+    if (datiLogin === null) {
+      alert("Credenziali errate");
+      return;
+    }
+
+    renderUserPill();
+    loginOverlay.classList.remove("open");
+  });
+};
 /* ============================ 7. Inizializzazione ============================ */
 
 /*
@@ -731,6 +767,7 @@ const initPage = (activePage) => {
   pillDropdown();
   renderUserPill();
   modal();
+  loginModal();
 
   return player;
 };
