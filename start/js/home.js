@@ -30,6 +30,11 @@ const makeCard = (track, index, tracks) => {
   card.classList.add("card");
   card.dataset.trackId = track.id;
 
+  // serve ad applyFilters per sapere il genere della card
+  /*if (track.genre) controlla che il genere esista prima di assegnarlo ed evita di mettere data-genre="" sulle card senza genere. Se il genere c'è la card viene etichettata e applyFilters può filtrarla.
+Se il genere manca, per evitare che la card non venga stampata affattp, la card che non ha data-genre viene lascia sempre visibile(solo se selezioniamo tutti).*/
+  if (track.genre) card.dataset.genre = track.genre;
+
   const imgWrap = document.createElement("div");
   imgWrap.classList.add("card-image-wrap");
   const img = document.createElement("img");
@@ -163,6 +168,9 @@ const loadHome = async () => {
   const rowHits = makeRow("Suggerimenti hits");
   rowHits.grid.replaceChildren(...tracceHits.map(makeCard));
   home.appendChild(rowHits.section);
+
+  // ricalcola i filtri dopo che tutte le card sono nel DOM
+applyFilters();
 };
 
 /*
@@ -183,6 +191,7 @@ const refreshAllHearts = () => {
 document.addEventListener("library:changed", () => {
   renderDynamicRows();
   refreshAllHearts();
+  applyFilters(); // riallinea la visibilità dopo aggiunta/rimozione preferito
 });
 
 loadHome();
