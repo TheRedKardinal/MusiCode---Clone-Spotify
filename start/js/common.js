@@ -67,6 +67,8 @@ const MAX_HISTORY = 12;
 const STORAGE_KEY_USER = "musicode_account";
 // creo un array per tenere più account
 const STORAGE_KEY_ACCOUNTS = "musicode_accounts";
+// costante di sessione attiva per mantenere il login e fare il logout
+const STORAGE_KEY_SESSION = "musicode_active_session";
 
 /* ============================ 2. Helpers ============================ */
 
@@ -436,11 +438,11 @@ const toggleFavourite = (track) => {
 };
 // funzione per capire se l'utente è loggato
 const getCurrentUser = () => {
-  const loginData = localStorage.getItem(STORAGE_KEY_USER);
-  if (loginData !== null) {
-    return JSON.parse(loginData);
-  } else {
+  const username = localStorage.getItem(STORAGE_KEY_SESSION);
+  if (username === null) {
     return null;
+  } else {
+    return getAccounts().find((account) => account.username === username);
   }
 };
 // funziona fi lettura dell'array di accounts
@@ -457,6 +459,14 @@ const registerUser = (datiUtente) => {
     email: datiUtente.email,
     password: datiUtente.password,
   };
+  // aggiunta di lettura dell'array di account, con salvataggio di nuovo account in oggetto e nell'array
+  const array = getAccounts();
+  const nuovoArray = [...array, objectUser];
+  const nuovaLista = localStorage.setItem(
+    STORAGE_KEY_ACCOUNTS,
+    JSON.stringify(nuovoArray),
+  );
+  return localStorage.setItem(STORAGE_KEY_SESSION, objectUser.username);
 };
 //funzione di logout
 const logoutUser = () => {
