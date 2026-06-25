@@ -66,7 +66,7 @@ const MAX_HISTORY = 12;
 // const per login
 const STORAGE_KEY_USER = "musicode_account";
 // creo un array per tenere più account
-let STORAGE_KEY_ACCOUNTS = [];
+const STORAGE_KEY_ACCOUNTS = "musicode_accounts";
 
 /* ============================ 2. Helpers ============================ */
 
@@ -443,6 +443,11 @@ const getCurrentUser = () => {
     return null;
   }
 };
+// funziona fi lettura dell'array di accounts
+const getAccounts = () => {
+  const thisAccount = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
+  return JSON.parse(thisAccount) || [];
+};
 // funzione di registrazione
 const registerUser = (datiUtente) => {
   let objectUser = {
@@ -452,8 +457,6 @@ const registerUser = (datiUtente) => {
     email: datiUtente.email,
     password: datiUtente.password,
   };
-  const savedUserData = JSON.stringify(objectUser);
-  return localStorage.setItem(STORAGE_KEY_USER, savedUserData);
 };
 //funzione di logout
 const logoutUser = () => {
