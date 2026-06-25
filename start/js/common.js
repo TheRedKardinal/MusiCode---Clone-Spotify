@@ -714,6 +714,7 @@ const modal = () => {
     registerUser(datiUtente);
     renderUserPill();
     overlayModal.classList.remove("open");
+    form.reset();
   });
 };
 // funzione di login nella modale di login
@@ -750,6 +751,7 @@ const loginModal = () => {
 
     renderUserPill();
     loginOverlay.classList.remove("open");
+    loginForm.reset();
   });
 };
 /* ============================ 7. Inizializzazione ============================ */
