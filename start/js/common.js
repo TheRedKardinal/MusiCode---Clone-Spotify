@@ -63,6 +63,10 @@ const STORAGE_KEY_HISTORY = "epitunes_history";
 const STORAGE_KEY_FAVOURITES = "epitunes_favourites";
 const STORAGE_KEY_LAST_SEARCH = "epitunes_last_search";
 const MAX_HISTORY = 12;
+// const per login
+const STORAGE_KEY_USER = "musicode_account";
+// creo un array per tenere più account
+let STORAGE_KEY_ACCOUNTS = [];
 
 /* ============================ 2. Helpers ============================ */
 
@@ -429,6 +433,31 @@ const toggleFavourite = (track) => {
   renderSidebarFavs();
   // avvisa la pagina che la libreria è cambiata (la home si ridisegna)
   document.dispatchEvent(new CustomEvent("library:changed"));
+};
+// funzione per capire se l'utente è loggato
+const getCurrentUser = () => {
+  const loginData = localStorage.getItem(STORAGE_KEY_USER);
+  if (loginData !== null) {
+    return JSON.parse(loginData);
+  } else {
+    return null;
+  }
+};
+// funzione di registrazione
+const registerUser = (datiUtente) => {
+  let objectUser = {
+    nome: datiUtente.name,
+    cognome: datiUtente.surname,
+    username: datiUtente.username,
+    email: datiUtente.email,
+    password: datiUtente.password,
+  };
+  const savedUserData = JSON.stringify(objectUser);
+  return localStorage.setItem(STORAGE_KEY_USER, savedUserData);
+};
+//funzione di logout
+const logoutUser = () => {
+  return localStorage.removeItem(STORAGE_KEY_USER);
 };
 
 /* ============================ 6. Render sidebar ============================ */
