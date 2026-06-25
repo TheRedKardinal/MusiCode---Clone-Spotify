@@ -18,6 +18,20 @@
 
 const player = initPage("home");
 
+const getTopArtists = () => {
+  const all = [...getHistory(), ...getFavourites()];
+  const counts = {};
+
+  all.forEach((track) => {
+    if (!track.artist) return;
+    counts[track.artist] = (counts[track.artist] || 0) + 1;
+  });
+
+  return Object.keys(counts)
+    .sort((a, b) => counts[b] - counts[a])
+    .slice(0, 3);
+};
+
 const home = document.querySelector(".home");
 
 /*
@@ -25,9 +39,10 @@ const home = document.querySelector(".home");
   - crea e restituisce una singola .card (cover, titolo, artista, play, cuore)
   - il cuore riflette lo stato reale dei preferiti e si aggiorna al click
 */
-const makeCard = (track) => {
+const makeCard = (track, index, tracks) => {
   const card = document.createElement("div");
   card.classList.add("card");
+  card.dataset.trackId = track.id;
 
   const imgWrap = document.createElement("div");
   imgWrap.classList.add("card-image-wrap");
@@ -48,7 +63,13 @@ const makeCard = (track) => {
   card.appendChild(pTitle);
   card.appendChild(pArtist);
 
-  card.addEventListener("click", () => player.play(track));
+  card.addEventListener("click", () => {
+    if (track.albumId) {
+      window.location.href = `album.html?id=${track.albumId}`;
+    } else {
+      window.location.href = `track.html?id=${track.id}`;
+    }
+  });
 
   const btnPlay = document.createElement("button");
   btnPlay.classList.add("card-play");
@@ -62,7 +83,7 @@ const makeCard = (track) => {
       document
         .querySelectorAll(".card-play")
         .forEach((btn) => (btn.textContent = "▶"));
-      player.play(track);
+      player.setQueue(tracks, index);
       btnPlay.textContent = "⏸";
     }
   });
@@ -111,6 +132,36 @@ const makeRow = (rowTitle) => {
   return { section, grid };
 };
 
+const makeAlbumCard = (album) => {
+  const card = document.createElement("div");
+  card.classList.add("card");
+
+  const imgWrap = document.createElement("div");
+  imgWrap.classList.add("card-image-wrap");
+  const img = document.createElement("img");
+  img.src = album.cover;
+  img.alt = album.title;
+  imgWrap.appendChild(img);
+
+  const pTitle = document.createElement("p");
+  pTitle.classList.add("card-title");
+  pTitle.textContent = album.title;
+
+  const pArtist = document.createElement("p");
+  pArtist.classList.add("card-sub");
+  pArtist.textContent = album.artist;
+
+  card.appendChild(imgWrap);
+  card.appendChild(pTitle);
+  card.appendChild(pArtist);
+
+  card.addEventListener("click", () => {
+    window.location.href = `album.html?id=${album.id}`;
+  });
+
+  return card;
+};
+
 /* Righe dinamiche (si aggiornano senza ricaricare la pagina) */
 const historyRow = makeRow("Riprodotti di recente");
 const favouritesRow = makeRow("I tuoi preferiti");
@@ -131,37 +182,57 @@ const renderDynamicRows = () => {
   favouritesRow.grid.replaceChildren(...favourites.map(makeCard));
 };
 
-/*
-  loadHome()
-  - chiama Promise.all sulle 3 fetch di suggerimenti
-  - costruisce le righe nell'ordine: history, favourites, pop, rock, hits
-*/
 const loadHome = async () => {
-  // righe dinamiche prima (ordine corretto nella pagina)
   home.appendChild(historyRow.section);
   home.appendChild(favouritesRow.section);
   renderDynamicRows();
 
-  const [pop, rock, hits] = await Promise.all([
-    fetchJSON(`${API_BASE}/search?term=pop&entity=song&limit=12`),
-    fetchJSON(`${API_BASE}/search?term=rock&entity=song&limit=12`),
-    fetchJSON(`${API_BASE}/search?term=hits&entity=song&limit=12`),
-  ]);
-  const traccePop = pop.results.map((raw) => new Track(raw));
-  const tracceRock = rock.results.map((raw) => new Track(raw));
-  const tracceHits = hits.results.map((raw) => new Track(raw));
+  const topArtists = getTopArtists();
 
-  const rowPop = makeRow("Suggerimenti pop");
-  rowPop.grid.replaceChildren(...traccePop.map(makeCard));
-  home.appendChild(rowPop.section);
+  if (topArtists.length > 0) {
+    const fetches = topArtists.flatMap((artist) => [
+      fetchJSON(`${API_BASE}/search?term=${encodeURIComponent(artist)}&entity=song&limit=12`),
+      fetchJSON(`${API_BASE}/search?term=${encodeURIComponent(artist)}&entity=album&limit=8`),
+    ]);
 
-  const rowRock = makeRow("Suggerimenti rock");
-  rowRock.grid.replaceChildren(...tracceRock.map(makeCard));
-  home.appendChild(rowRock.section);
+    const results = await Promise.all(fetches);
 
-  const rowHits = makeRow("Suggerimenti hits");
-  rowHits.grid.replaceChildren(...tracceHits.map(makeCard));
-  home.appendChild(rowHits.section);
+    topArtists.forEach((artist, i) => {
+      const songs = results[i * 2].results.map((raw) => new Track(raw));
+      const albums = results[i * 2 + 1].results.map((raw) => new Album(raw));
+
+      if (songs.length > 0) {
+        const rowSongs = makeRow(`Brani di ${artist}`);
+        rowSongs.grid.replaceChildren(...songs.map(makeCard));
+        home.appendChild(rowSongs.section);
+      }
+
+      if (albums.length > 0) {
+        const rowAlbums = makeRow(`Album di ${artist}`);
+        albums.forEach((album) => rowAlbums.grid.appendChild(makeAlbumCard(album)));
+        home.appendChild(rowAlbums.section);
+      }
+    });
+
+  } else {
+    const [pop, rock, hits] = await Promise.all([
+      fetchJSON(`${API_BASE}/search?term=pop&entity=song&limit=12`),
+      fetchJSON(`${API_BASE}/search?term=rock&entity=song&limit=12`),
+      fetchJSON(`${API_BASE}/search?term=hits&entity=song&limit=12`),
+    ]);
+
+    const rowPop = makeRow("Suggerimenti pop");
+    rowPop.grid.replaceChildren(...pop.results.map((r) => new Track(r)).map(makeCard));
+    home.appendChild(rowPop.section);
+
+    const rowRock = makeRow("Suggerimenti rock");
+    rowRock.grid.replaceChildren(...rock.results.map((r) => new Track(r)).map(makeCard));
+    home.appendChild(rowRock.section);
+
+    const rowHits = makeRow("Suggerimenti hits");
+    rowHits.grid.replaceChildren(...hits.results.map((r) => new Track(r)).map(makeCard));
+    home.appendChild(rowHits.section);
+  }
 };
 
 /*

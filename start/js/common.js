@@ -220,15 +220,18 @@ class Player {
     this.elTitle = null;
     this.elArtist = null;
     this.elBtnToggle = null;
-    this.elProgressFill = null;
+    this.elProgressSlider = null;
     this.elTimeCurrent = null;
     this.elTimeTotal = null;
     this.elVolumeFill = null;
 
     this.audio.addEventListener("timeupdate", () => {
-      if (!this.audio.duration) return;
+      if (!this.audio.duration || this._isSeeking) return;
       const percent = (this.audio.currentTime / this.audio.duration) * 100;
-      if (this.elProgressFill) this.elProgressFill.style.width = `${percent}%`;
+      if (this.elProgressSlider) {
+        this.elProgressSlider.value = percent;
+        this.elProgressSlider.style.setProperty("--percent", `${percent}%`);
+      }
       if (this.elTimeCurrent)
         this.elTimeCurrent.textContent = formatTime(
           this.audio.currentTime * 1000,
@@ -236,9 +239,19 @@ class Player {
     });
 
     this.audio.addEventListener("ended", () => {
-      this.isPlaying = false;
-      if (this.elBtnToggle) this.elBtnToggle.textContent = "▶";
+      if (this.isRepeating) {
+        this.audio.currentTime = 0;
+        this.audio.play();
+      } else {
+        this.playNext();
+      }
     });
+
+    this.previousVolume = 0.8;
+    this.isShuffling = false;
+    this.isRepeating = false;
+    this.queue = [];
+    this.currentIndex = -1;
   }
 
   mount() {
@@ -255,17 +268,15 @@ class Player {
 
       <div class="player-center">
         <div class="player-controls">
-          <button class="btn-ctrl" id="btn-shuffle" aria-label="Shuffle">⇄</button>
+          <button class="btn-ctrl" id="btn-shuffle" aria-label="Shuffle"><i class="bi bi-shuffle"></i></button>
           <button class="btn-ctrl" id="btn-prev"    aria-label="Precedente">⏮</button>
           <button class="btn-play" id="btn-toggle"  aria-label="Play/Pausa">▶</button>
           <button class="btn-ctrl" id="btn-next"    aria-label="Successivo">⏭</button>
-          <button class="btn-ctrl" id="btn-repeat"  aria-label="Ripeti">↻</button>
+          <button class="btn-ctrl" id="btn-repeat"  aria-label="Ripeti"><i class="bi bi-repeat"></i></button>
         </div>
         <div class="player-progress">
           <span id="time-current">0:00</span>
-          <div class="progress-bar" id="progress-bar">
-            <div class="progress-fill" id="progress-fill"></div>
-          </div>
+          <input type="range" id="progress-slider" class="progress-slider" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento brano"/>
           <span id="time-total">0:00</span>
         </div>
       </div>
@@ -280,7 +291,7 @@ class Player {
     this.elTitle = document.querySelector("#player-title");
     this.elArtist = document.querySelector("#player-artist");
     this.elBtnToggle = document.querySelector("#btn-toggle");
-    this.elProgressFill = document.querySelector("#progress-fill");
+    this.elProgressSlider = document.querySelector("#progress-slider");
     this.elTimeCurrent = document.querySelector("#time-current");
     this.elTimeTotal = document.querySelector("#time-total");
     this.elVolumeSlider = document.querySelector("#volume-slider");
@@ -288,23 +299,100 @@ class Player {
     // Click play/pausa
     this.elBtnToggle.addEventListener("click", () => this.togglePlay());
     // Click sulla progress bar → seek
-    const progressBar = document.querySelector("#progress-bar");
-    progressBar.addEventListener("click", (e) => {
-      const percent = e.offsetX / progressBar.clientWidth; // 0..1 dove clicchi
-      this.seek(percent);
-    });
+
+    const btnPrev = document.querySelector("#btn-prev");
+    const btnNext = document.querySelector("#btn-next");
+    if (btnPrev) btnPrev.addEventListener("click", () => this.playPrev());
+    if (btnNext) btnNext.addEventListener("click", () => this.playNext());
+
+    const btnShuffle = document.querySelector("#btn-shuffle");
+    const btnRepeat = document.querySelector("#btn-repeat");
+
+    if (btnShuffle)
+      btnShuffle.addEventListener("click", () => {
+        this.isShuffling = !this.isShuffling;
+        btnShuffle.classList.toggle("btn-active", this.isShuffling);
+      });
+
+    if (btnRepeat)
+      btnRepeat.addEventListener("click", () => {
+        this.isRepeating = !this.isRepeating;
+        btnRepeat.classList.toggle("btn-active", this.isRepeating);
+      });
+
+    if (this.elProgressSlider) {
+      const progressTooltip = document.createElement("div");
+      progressTooltip.classList.add("progress-tooltip");
+      this.elProgressSlider.parentElement.appendChild(progressTooltip);
+
+      this.elProgressSlider.addEventListener("mousemove", (e) => {
+        if (!this.audio.duration) return;
+        const sliderRect = this.elProgressSlider.getBoundingClientRect();
+        const containerRect =
+          this.elProgressSlider.parentElement.getBoundingClientRect();
+        const percent = Math.min(
+          1,
+          Math.max(0, (e.clientX - sliderRect.left) / sliderRect.width),
+        );
+        progressTooltip.textContent = formatTime(
+          percent * this.audio.duration * 1000,
+        );
+        progressTooltip.style.display = "block";
+        progressTooltip.style.left = `${e.clientX - containerRect.left}px`;
+      });
+
+      this.elProgressSlider.addEventListener("mouseleave", () => {
+        progressTooltip.style.display = "none";
+      });
+
+      this.elProgressSlider.addEventListener("pointerdown", () => {
+        this._isSeeking = true;
+        this._wasPlaying = !this.audio.paused;
+        this.audio.pause();
+      });
+      this.elProgressSlider.addEventListener("input", (e) => {
+        this.elProgressSlider.style.setProperty(
+          "--percent",
+          `${e.target.value}%`,
+        );
+      });
+      this.elProgressSlider.addEventListener("change", (e) => {
+        this._isSeeking = false;
+        this.seek(parseFloat(e.target.value) / 100);
+        if (this._wasPlaying) {
+          this.audio.play().catch(() => {});
+          this.isPlaying = true;
+          if (this.elBtnToggle) this.elBtnToggle.textContent = "⏸";
+        }
+      });
+    }
 
     // Slider volume → setVolume
     if (this.elVolumeSlider) {
       this.elVolumeSlider.addEventListener("input", (e) => {
-        this.setVolume(parseFloat(e.target.value)); // 0..1
+        this.setVolume(parseFloat(e.target.value));
       });
     }
 
-    this.audio.volume = 0.3;
+    const volumeIcon = document.querySelector(".player-right span");
+    if (volumeIcon) {
+      volumeIcon.style.cursor = "pointer";
+      volumeIcon.addEventListener("click", () => {
+        if (this.audio.volume > 0) {
+          // Se l'audio è attivo, muto e va a 0
+          this.setVolume(0);
+        } else {
+          // Se è già muto, ripristiniamo l'ultimo volume utile memorizzato
+          this.setVolume(this.previousVolume);
+        }
+      });
+    }
+    // --
+
+    this.setVolume(0.3);
   }
 
-  async play(track) {
+  async play(track, auto = false) {
     if (!track || !track.previewUrl) return; // niente brano o niente preview -> esci
 
     // 1) salva brano corrente
@@ -320,6 +408,8 @@ class Player {
     } catch (errore) {
       console.error("Impossibile riprodurre il brano:", errore);
       this.isPlaying = false;
+      this.queue = [];
+      this.currentIndex = -1;
     }
 
     // 4) aggiorna UI footer
@@ -342,6 +432,20 @@ class Player {
       `.track-row[data-track-id="${track.id}"]`,
     );
     if (row) row.classList.add("is-playing");
+
+    document
+      .querySelectorAll(".card.is-playing")
+      .forEach((c) => c.classList.remove("is-playing"));
+    document
+      .querySelectorAll(`.card[data-track-id="${track.id}"]`)
+      .forEach((c) => c.classList.add("is-playing"));
+
+    // pannello laterale col brano IN RIPRODUZIONE (non quello cliccato):
+    // click utente -> apri; auto-advance -> aggiorna solo se già aperto
+    if (window.nowPlaying) {
+      if (auto) window.nowPlaying.render(this.currentTrack);
+      else window.nowPlaying.show(this.currentTrack);
+    }
   }
 
   togglePlay() {
@@ -371,12 +475,55 @@ class Player {
       const percent = vol * 100;
       volumeSlider.style.setProperty("--percent", `${percent}%`);
     }
+
+    const volumeIcon = document.querySelector(".player-right span");
+    if (volumeIcon) {
+      if (vol === 0) {
+        volumeIcon.textContent = "🔇"; // Muto (X)
+      } else if (vol < 0.3) {
+        volumeIcon.textContent = "🔈"; // Volume basso (una sola onda)
+      } else if (vol < 0.7) {
+        volumeIcon.textContent = "🔉"; // Volume medio (due onde)
+      } else {
+        volumeIcon.textContent = "🔊"; // Volume alto (tre onde)
+      }
+    }
+
+    if (vol > 0) {
+      this.previousVolume = vol;
+    }
   }
 
   seek(percent) {
     if (!this.audio.duration) return;
     this.audio.currentTime =
       this.audio.duration * Math.min(1, Math.max(0, percent));
+  }
+  setQueue(tracks, startIndex) {
+    this.queue = tracks;
+    this.currentIndex = startIndex;
+    this.play(tracks[startIndex]);
+  }
+
+  playNext() {
+    if (!this.queue || !this.queue.length) return;
+    if (this.isShuffling) {
+      this.currentIndex = Math.floor(Math.random() * this.queue.length);
+    } else {
+      this.currentIndex = (this.currentIndex + 1) % this.queue.length;
+    }
+    this.play(this.queue[this.currentIndex], true);
+  }
+
+  playPrev() {
+    if (!this.queue.length) return;
+    if (this.audio.currentTime > 3) {
+      this.seek(0);
+      return;
+    }
+    this.currentIndex =
+      (this.currentIndex - 1 + this.queue.length) % this.queue.length;
+    this.play(this.queue[this.currentIndex], true);
   }
 }
 
@@ -403,9 +550,6 @@ const addToHistory = (track) => {
 
   const tagliato = newArray.slice(0, MAX_HISTORY);
   localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(tagliato));
-
-  // avvisa la pagina che la libreria è cambiata (la home si ridisegna)
-  document.dispatchEvent(new CustomEvent("library:changed"));
 
   // TODO: array = getHistory(); rimuovi eventuale duplicato (per id);
   //       metti track in testa; tronca a MAX_HISTORY; salva
@@ -510,7 +654,7 @@ const renderSidebarFavs = () => {
     return;
   }
 
-  favs.forEach((track) => {
+  favs.forEach((track, index) => {
     const li = document.createElement("li");
     li.style.cursor = "pointer";
     li.style.display = "flex"; // Allinea immagine e testo sulla stessa riga
@@ -539,7 +683,7 @@ const renderSidebarFavs = () => {
     li.appendChild(textSpan);
 
     li.addEventListener("click", () => {
-      if (window.player) window.player.play(track);
+      if (window.player) window.player.setQueue(favs, index);
     });
     favsList.appendChild(li);
   });
@@ -549,13 +693,13 @@ const renderSidebar = (activePage) => {
   const sidebar = document.querySelector(".sidebar");
   if (!sidebar) return;
   sidebar.innerHTML = `
-    <div class="brand">
-      <div class="brand-mark">E</div>
-      <span class="brand-text">EpiTunes</span>
-    </div>
+    <a href="index.html" class="brand">
+      <img src="assets/Nuovo_Logo.png" alt="EpiTunes Logo" class="brand-logo" />
+      <span class="brand-text">usiCode</span>
+    </a>
     <nav class="sidebar-nav">
-      <a href="index.html"  data-page="home"   ${activePage === "home" ? 'class="active"' : ""}><span class="ico">🏠</span><span>Home</span></a>
-      <a href="search.html" data-page="search" ${activePage === "search" ? 'class="active"' : ""}><span class="ico">🔍</span><span>Cerca</span></a>
+      <a href="index.html"  data-page="home"   ${activePage === "home" ? 'class="active"' : ""}><span class="ico"><i class="bi bi-house-door-fill"></i></span><span>Home</span></a>
+      <a href="search.html" data-page="search" ${activePage === "search" ? 'class="active"' : ""}><span class="ico"><i class="bi bi-search"></i></span><span>Cerca</span></a>
     </nav>
     <p class="sidebar-section-title">I tuoi preferiti</p>
     <ul class="sidebar-list" id="sidebar-favs"></ul>
@@ -629,6 +773,515 @@ const setupCarousels = () => {
   new MutationObserver(() => {
     document.querySelectorAll(".row").forEach(decorateRow);
   }).observe(document.body, { childList: true, subtree: true });
+};
+
+/* ============================ 6c. Pannello "In riproduzione" ============================ */
+
+/*
+  createNowPlayingPanel()
+  - Crea un pannello laterale a destra che mostra info sul brano IN RIPRODUZIONE
+    (non quello cliccato) e sull'artista (fetch lookup iTunes).
+  - Niente innerHTML / textContent: si usano createElement + append(stringa)
+    (append con stringa crea automaticamente un nodo di testo) e replaceChildren.
+  - API: { show(track), open(), close(), toggle() }
+*/
+
+// imposta il testo di un elemento senza usare textContent/innerHTML
+const setText = (el, str) => {
+  el.replaceChildren();
+  el.append(str == null ? "" : String(str));
+};
+
+/*
+  getArtistInfo(name) -> { photo, bio, genre, formedYear }
+  - Cerca l'artista su TheAudioDB (foto + bio reali, non presenti su iTunes)
+  - Cache condivisa: usata sia dal pannello "In riproduzione" sia dalle card artista
+  - In caso di artista non trovato ritorna campi vuoti
+*/
+const audioDbCache = new Map();
+const getArtistInfo = async (name) => {
+  if (!name) return { photo: "", bio: "", genre: "", formedYear: "" };
+  if (audioDbCache.has(name)) return audioDbCache.get(name);
+
+  const photoOf = (a) => a.strArtistThumb || a.strArtistFanart || "";
+
+  const searchArtists = async (q) => {
+    const data = await fetchJSON(
+      `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(
+        q,
+      )}`,
+    );
+    return (data && data.artists) || [];
+  };
+
+  // nome ripulito da featuring/collaborazioni: "Snoop Dogg feat. Dr. Dre" -> "Snoop Dogg"
+  const cleanName = name
+    .split(/\s*(?:feat\.?|ft\.?|featuring|&|,|\/|\bx\b|with)\s+/i)[0]
+    .trim();
+
+  let artists = await searchArtists(name);
+  if (!artists.length && cleanName && cleanName !== name) {
+    artists = await searchArtists(cleanName);
+  }
+  // tra più risultati scegli il primo CHE HA una foto (evita duplicati vuoti);
+  // se nessuno ha foto, ripiega sul primo
+  const raw = artists.find((a) => photoOf(a)) || artists[0] || null;
+  const info = raw
+    ? {
+        photo: photoOf(raw),
+        bio: raw.strBiographyEN || "",
+        genre: raw.strGenre || "",
+        formedYear: raw.intFormedYear || "",
+      }
+    : { photo: "", bio: "", genre: "", formedYear: "" };
+  audioDbCache.set(name, info);
+  return info;
+};
+
+const createNowPlayingPanel = () => {
+  // evita doppioni se initPage viene chiamato più volte
+  const existing = document.querySelector("#now-playing");
+  if (existing) existing.remove();
+
+  const panel = document.createElement("aside");
+  panel.classList.add("now-playing");
+  panel.id = "now-playing";
+
+  // --- Header: nome artista + chiudi ---
+  const header = document.createElement("div");
+  header.classList.add("np-header");
+
+  const headerTitle = document.createElement("span");
+  headerTitle.classList.add("np-header-title");
+  setText(headerTitle, "In riproduzione");
+
+  const btnClose = document.createElement("button");
+  btnClose.classList.add("np-close");
+  btnClose.setAttribute("aria-label", "Chiudi");
+  setText(btnClose, "✕");
+
+  header.appendChild(headerTitle);
+  header.appendChild(btnClose);
+
+  // --- Cover grande ---
+  const coverWrap = document.createElement("div");
+  coverWrap.classList.add("np-cover");
+  const coverImg = document.createElement("img");
+  coverImg.alt = "";
+  coverWrap.appendChild(coverImg);
+
+  // --- Titolo + artista ---
+  const title = document.createElement("h2");
+  title.classList.add("np-title");
+
+  const artist = document.createElement("p");
+  artist.classList.add("np-artist");
+
+  // --- Info brano (album, durata) ---
+  const trackInfo = document.createElement("div");
+  trackInfo.classList.add("np-info");
+
+  const makeInfoRow = (label) => {
+    const row = document.createElement("div");
+    row.classList.add("np-info-row");
+    const k = document.createElement("span");
+    k.classList.add("np-info-key");
+    setText(k, label);
+    const v = document.createElement("span");
+    v.classList.add("np-info-val");
+    row.appendChild(k);
+    row.appendChild(v);
+    trackInfo.appendChild(row);
+    return v;
+  };
+
+  const valAlbum = makeInfoRow("Album");
+  const valYear = makeInfoRow("Anno");
+  const valGenre = makeInfoRow("Genere");
+  const valDuration = makeInfoRow("Durata");
+
+  // --- Sezione artista ---
+  const about = document.createElement("section");
+  about.classList.add("np-about");
+
+  const aboutTitle = document.createElement("h3");
+  setText(aboutTitle, "Sull'artista");
+
+  const aboutImg = document.createElement("img");
+  aboutImg.classList.add("np-about-img");
+  aboutImg.alt = "";
+  aboutImg.hidden = true;
+
+  const aboutName = document.createElement("p");
+  aboutName.classList.add("np-about-name");
+
+  const aboutGenre = document.createElement("p");
+  aboutGenre.classList.add("np-about-genre");
+
+  const aboutBio = document.createElement("p");
+  aboutBio.classList.add("np-about-bio");
+
+  about.appendChild(aboutTitle);
+  about.appendChild(aboutImg);
+  about.appendChild(aboutName);
+  about.appendChild(aboutGenre);
+  about.appendChild(aboutBio);
+
+  panel.appendChild(header);
+  panel.appendChild(coverWrap);
+  panel.appendChild(title);
+  panel.appendChild(artist);
+  panel.appendChild(trackInfo);
+  panel.appendChild(about);
+  document.body.appendChild(panel);
+
+  // cache per non rifetchare gli stessi dati
+  const itunesCache = new Map(); // chiave: trackId  -> { year, genre }
+
+  // brano corrente ancora valido? (evita di scrivere dati di un brano vecchio)
+  const stillCurrent = (track) =>
+    window.player && window.player.currentTrack === track;
+
+  // --- iTunes: anno + genere del brano (lookup per trackId) ---
+  const enrichItunes = async (track) => {
+    setText(valYear, "—");
+    setText(valGenre, "—");
+    if (!track.id) return;
+
+    if (itunesCache.has(track.id)) {
+      const c = itunesCache.get(track.id);
+      setText(valYear, c.year || "—");
+      setText(valGenre, c.genre || "—");
+      return;
+    }
+
+    const data = await fetchJSON(`${API_BASE}/lookup?id=${track.id}`);
+    const raw = (data.results || []).find((r) => r.trackId);
+    const info = {
+      year: raw && raw.releaseDate ? raw.releaseDate.slice(0, 4) : "",
+      genre: raw ? raw.primaryGenreName : "",
+    };
+    itunesCache.set(track.id, info);
+
+    if (stillCurrent(track)) {
+      setText(valYear, info.year || "—");
+      setText(valGenre, info.genre || "—");
+    }
+  };
+
+  // --- TheAudioDB: foto + bio artista (search per nome) ---
+  const enrichArtist = async (track) => {
+    aboutImg.hidden = true;
+    setText(aboutName, track.artist || "—");
+    setText(aboutGenre, "");
+    setText(aboutBio, "Caricamento info artista…");
+    setText(headerTitle, track.artist || "In riproduzione");
+
+    const name = track.artist;
+    if (!name) {
+      setText(aboutBio, "");
+      return;
+    }
+
+    const applyInfo = (info) => {
+      if (!stillCurrent(track)) return;
+      setText(aboutName, name);
+      aboutImg.hidden = false;
+      if (info.photo) {
+        aboutImg.src = info.photo;
+        aboutImg.classList.remove("is-default");
+      } else {
+        aboutImg.src = "assets/artist-default.jpeg";
+        aboutImg.classList.add("is-default");
+      }
+      const meta = [info.genre, info.formedYear].filter(Boolean).join(" · ");
+      setText(aboutGenre, meta);
+      setText(aboutBio, info.bio || "Nessuna biografia disponibile.");
+    };
+
+    const info = await getArtistInfo(name);
+    applyInfo(info);
+  };
+
+  const render = (track) => {
+    if (!track) return;
+    coverImg.src = bigArt(track.cover) || track.cover || "";
+    coverImg.alt = track.title || "";
+    setText(title, track.title || "—");
+    setText(artist, track.artist || "—");
+    setText(valAlbum, track.album || "—");
+    setText(valDuration, formatTime(track.durationMs));
+    setText(headerTitle, track.artist || "In riproduzione");
+    enrichItunes(track);
+    enrichArtist(track);
+  };
+
+  const open = () => panel.classList.add("is-open");
+  const close = () => panel.classList.remove("is-open");
+  const toggle = () => panel.classList.toggle("is-open");
+
+  const show = (track) => {
+    render(track);
+    open();
+  };
+
+  btnClose.addEventListener("click", close);
+
+  return { show, open, close, toggle, render };
+};
+/* ============================ 6c. Pannello "In riproduzione" ============================ */
+
+/*
+  createNowPlayingPanel()
+  - Crea un pannello laterale a destra che mostra info sul brano IN RIPRODUZIONE
+    (non quello cliccato) e sull'artista (fetch lookup iTunes).
+  - Niente innerHTML / textContent: si usano createElement + append(stringa)
+    (append con stringa crea automaticamente un nodo di testo) e replaceChildren.
+  - API: { show(track), open(), close(), toggle() }
+*/
+
+// imposta il testo di un elemento senza usare textContent/innerHTML
+const setText = (el, str) => {
+  el.replaceChildren();
+  el.append(str == null ? "" : String(str));
+};
+
+/*
+  getArtistInfo(name) -> { photo, bio, genre, formedYear }
+  - Cerca l'artista su TheAudioDB (foto + bio reali, non presenti su iTunes)
+  - Cache condivisa: usata sia dal pannello "In riproduzione" sia dalle card artista
+  - In caso di artista non trovato ritorna campi vuoti
+*/
+const audioDbCache = new Map();
+const getArtistInfo = async (name) => {
+  if (!name) return { photo: "", bio: "", genre: "", formedYear: "" };
+  if (audioDbCache.has(name)) return audioDbCache.get(name);
+
+  const photoOf = (a) => a.strArtistThumb || a.strArtistFanart || "";
+
+  const searchArtists = async (q) => {
+    const data = await fetchJSON(
+      `https://www.theaudiodb.com/api/v1/json/2/search.php?s=${encodeURIComponent(
+        q,
+      )}`,
+    );
+    return (data && data.artists) || [];
+  };
+
+  // nome ripulito da featuring/collaborazioni: "Snoop Dogg feat. Dr. Dre" -> "Snoop Dogg"
+  const cleanName = name
+    .split(/\s*(?:feat\.?|ft\.?|featuring|&|,|\/|\bx\b|with)\s+/i)[0]
+    .trim();
+
+  let artists = await searchArtists(name);
+  if (!artists.length && cleanName && cleanName !== name) {
+    artists = await searchArtists(cleanName);
+  }
+  // tra più risultati scegli il primo CHE HA una foto (evita duplicati vuoti);
+  // se nessuno ha foto, ripiega sul primo
+  const raw = artists.find((a) => photoOf(a)) || artists[0] || null;
+  const info = raw
+    ? {
+        photo: photoOf(raw),
+        bio: raw.strBiographyEN || "",
+        genre: raw.strGenre || "",
+        formedYear: raw.intFormedYear || "",
+      }
+    : { photo: "", bio: "", genre: "", formedYear: "" };
+  audioDbCache.set(name, info);
+  return info;
+};
+
+const createNowPlayingPanel = () => {
+  // evita doppioni se initPage viene chiamato più volte
+  const existing = document.querySelector("#now-playing");
+  if (existing) existing.remove();
+
+  const panel = document.createElement("aside");
+  panel.classList.add("now-playing");
+  panel.id = "now-playing";
+
+  // --- Header: nome artista + chiudi ---
+  const header = document.createElement("div");
+  header.classList.add("np-header");
+
+  const headerTitle = document.createElement("span");
+  headerTitle.classList.add("np-header-title");
+  setText(headerTitle, "In riproduzione");
+
+  const btnClose = document.createElement("button");
+  btnClose.classList.add("np-close");
+  btnClose.setAttribute("aria-label", "Chiudi");
+  setText(btnClose, "✕");
+
+  header.appendChild(headerTitle);
+  header.appendChild(btnClose);
+
+  // --- Cover grande ---
+  const coverWrap = document.createElement("div");
+  coverWrap.classList.add("np-cover");
+  const coverImg = document.createElement("img");
+  coverImg.alt = "";
+  coverWrap.appendChild(coverImg);
+
+  // --- Titolo + artista ---
+  const title = document.createElement("h2");
+  title.classList.add("np-title");
+
+  const artist = document.createElement("p");
+  artist.classList.add("np-artist");
+
+  // --- Info brano (album, durata) ---
+  const trackInfo = document.createElement("div");
+  trackInfo.classList.add("np-info");
+
+  const makeInfoRow = (label) => {
+    const row = document.createElement("div");
+    row.classList.add("np-info-row");
+    const k = document.createElement("span");
+    k.classList.add("np-info-key");
+    setText(k, label);
+    const v = document.createElement("span");
+    v.classList.add("np-info-val");
+    row.appendChild(k);
+    row.appendChild(v);
+    trackInfo.appendChild(row);
+    return v;
+  };
+
+  const valAlbum = makeInfoRow("Album");
+  const valYear = makeInfoRow("Anno");
+  const valGenre = makeInfoRow("Genere");
+  const valDuration = makeInfoRow("Durata");
+
+  // --- Sezione artista ---
+  const about = document.createElement("section");
+  about.classList.add("np-about");
+
+  const aboutTitle = document.createElement("h3");
+  setText(aboutTitle, "Sull'artista");
+
+  const aboutImg = document.createElement("img");
+  aboutImg.classList.add("np-about-img");
+  aboutImg.alt = "";
+  aboutImg.hidden = true;
+
+  const aboutName = document.createElement("p");
+  aboutName.classList.add("np-about-name");
+
+  const aboutGenre = document.createElement("p");
+  aboutGenre.classList.add("np-about-genre");
+
+  const aboutBio = document.createElement("p");
+  aboutBio.classList.add("np-about-bio");
+
+  about.appendChild(aboutTitle);
+  about.appendChild(aboutImg);
+  about.appendChild(aboutName);
+  about.appendChild(aboutGenre);
+  about.appendChild(aboutBio);
+
+  panel.appendChild(header);
+  panel.appendChild(coverWrap);
+  panel.appendChild(title);
+  panel.appendChild(artist);
+  panel.appendChild(trackInfo);
+  panel.appendChild(about);
+  document.body.appendChild(panel);
+
+  // cache per non rifetchare gli stessi dati
+  const itunesCache = new Map(); // chiave: trackId  -> { year, genre }
+
+  // brano corrente ancora valido? (evita di scrivere dati di un brano vecchio)
+  const stillCurrent = (track) =>
+    window.player && window.player.currentTrack === track;
+
+  // --- iTunes: anno + genere del brano (lookup per trackId) ---
+  const enrichItunes = async (track) => {
+    setText(valYear, "—");
+    setText(valGenre, "—");
+    if (!track.id) return;
+
+    if (itunesCache.has(track.id)) {
+      const c = itunesCache.get(track.id);
+      setText(valYear, c.year || "—");
+      setText(valGenre, c.genre || "—");
+      return;
+    }
+
+    const data = await fetchJSON(`${API_BASE}/lookup?id=${track.id}`);
+    const raw = (data.results || []).find((r) => r.trackId);
+    const info = {
+      year: raw && raw.releaseDate ? raw.releaseDate.slice(0, 4) : "",
+      genre: raw ? raw.primaryGenreName : "",
+    };
+    itunesCache.set(track.id, info);
+
+    if (stillCurrent(track)) {
+      setText(valYear, info.year || "—");
+      setText(valGenre, info.genre || "—");
+    }
+  };
+
+  // --- TheAudioDB: foto + bio artista (search per nome) ---
+  const enrichArtist = async (track) => {
+    aboutImg.hidden = true;
+    setText(aboutName, track.artist || "—");
+    setText(aboutGenre, "");
+    setText(aboutBio, "Caricamento info artista…");
+    setText(headerTitle, track.artist || "In riproduzione");
+
+    const name = track.artist;
+    if (!name) {
+      setText(aboutBio, "");
+      return;
+    }
+
+    const applyInfo = (info) => {
+      if (!stillCurrent(track)) return;
+      setText(aboutName, name);
+      aboutImg.hidden = false;
+      if (info.photo) {
+        aboutImg.src = info.photo;
+        aboutImg.classList.remove("is-default");
+      } else {
+        aboutImg.src = "assets/artist-default.jpeg";
+        aboutImg.classList.add("is-default");
+      }
+      const meta = [info.genre, info.formedYear].filter(Boolean).join(" · ");
+      setText(aboutGenre, meta);
+      setText(aboutBio, info.bio || "Nessuna biografia disponibile.");
+    };
+
+    const info = await getArtistInfo(name);
+    applyInfo(info);
+  };
+
+  const render = (track) => {
+    if (!track) return;
+    coverImg.src = bigArt(track.cover) || track.cover || "";
+    coverImg.alt = track.title || "";
+    setText(title, track.title || "—");
+    setText(artist, track.artist || "—");
+    setText(valAlbum, track.album || "—");
+    setText(valDuration, formatTime(track.durationMs));
+    setText(headerTitle, track.artist || "In riproduzione");
+    enrichItunes(track);
+    enrichArtist(track);
+  };
+
+  const open = () => panel.classList.add("is-open");
+  const close = () => panel.classList.remove("is-open");
+  const toggle = () => panel.classList.toggle("is-open");
+
+  const show = (track) => {
+    render(track);
+    open();
+  };
+
+  btnClose.addEventListener("click", close);
+
+  return { show, open, close, toggle, render };
 };
 
 /*
@@ -766,6 +1419,19 @@ const initPage = (activePage) => {
   const player = new Player();
   player.mount();
   window.player = player;
+
+  // pannello laterale "In riproduzione"
+  window.nowPlaying = createNowPlayingPanel();
+
+  // click sul brano in basso a sinistra -> apre/chiude il pannello (brano in riproduzione)
+  const playerTrack = document.querySelector(".player-track");
+  if (playerTrack) {
+    playerTrack.style.cursor = "pointer";
+    playerTrack.addEventListener("click", () => {
+      if (player.currentTrack) window.nowPlaying.render(player.currentTrack);
+      window.nowPlaying.toggle();
+    });
+  }
 
   const [btnBack, btnForward] = document.querySelectorAll(".nav-btn");
   if (btnBack) btnBack.addEventListener("click", () => history.back());
