@@ -766,6 +766,8 @@ const renderFilterPills = (activePage) => {
   });
   bar.appendChild(pillAll);
 
+
+
   // --- Pills generi ---
   FILTER_GENRES.forEach((genre) => {
     const pill = document.createElement("button");
@@ -789,104 +791,28 @@ const renderFilterPills = (activePage) => {
     bar.appendChild(pill);
   });
 
-  // --- Pill Preferiti (solo home e search) ---
-  if (activePage === "home" || activePage === "search") {
+  if (activePage === "home") {
     const pillFav = document.createElement("button");
     pillFav.classList.add("filter-pill", "filter-pill--fav");
     pillFav.textContent = "Preferiti";
-    pillFav.addEventListener("click", () => {
-      showFavsOnly = !showFavsOnly;
-      pillFav.classList.toggle("active", showFavsOnly);
+pillFav.addEventListener("click", () => {
+  showFavsOnly = !showFavsOnly;
+  pillFav.classList.toggle("active", showFavsOnly);
 
-      // quando attivi ♥: disabilita le pills genere principali
-      // quando disattivi ♥: le riabilita e resetta il genere secondario
-      bar.querySelectorAll(".filter-pill:not(.filter-pill--fav)").forEach((p) => {
-        p.disabled = showFavsOnly;
-        p.style.opacity = showFavsOnly ? "0.35" : "";
-      });
+  // disabilita/riabilita le pills Tutti, Pop, Rock
+  bar.querySelectorAll(".filter-pill:not(.filter-pill--fav)").forEach((p) => {
+    p.disabled = showFavsOnly;
+    p.style.opacity = showFavsOnly ? "0.35" : "";
+  });
 
-      if (!showFavsOnly) {
-        // resetta il genere secondario nella row preferiti
-        activeGenre = null;
-        const secBar = document.querySelector("#filter-pills-favs");
-        if (secBar) {
-          secBar.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-          secBar.querySelector(".filter-pill").classList.add("active");
-        }
-      }
-
-      applyFilters();
-      renderSecondaryPills(); // crea/mostra le pills secondarie sotto "I tuoi preferiti"
-    });
+  applyFilters();
+});
     bar.appendChild(pillFav);
   }
 
   topbarNav.appendChild(bar);
 };
-/*
-  renderSecondaryPills()
-  - Crea una seconda barra di pills accanto all'h2 "I tuoi preferiti"
-  - Appare solo quando showFavsOnly è true
-  - Filtra per genere dentro la row dei preferiti
-*/
-const renderSecondaryPills = () => {
-  // rimuovi eventuale barra già esistente
-  const existing = document.querySelector("#filter-pills-favs");
-  if (existing) existing.remove();
 
-  if (!showFavsOnly) return;
-
-  const favRow = document.querySelector(".row[data-row-type='favourites']");
-  if (!favRow) return;
-
-  const h2 = favRow.querySelector("h2");
-  if (!h2) return;
-
-  const bar = document.createElement("div");
-  bar.classList.add("filter-pills");
-  bar.id = "filter-pills-favs";
-  bar.style.display = "inline-flex";
-  bar.style.marginLeft = "16px";
-  bar.style.verticalAlign = "middle";
-
-  // Pill "Tutti"
-  const pillAll = document.createElement("button");
-  pillAll.classList.add("filter-pill", "active");
-  pillAll.textContent = "Tutti";
-  pillAll.addEventListener("click", () => {
-    activeGenre = null;
-    bar.querySelectorAll(".filter-pill[data-genre]").forEach((p) =>
-      p.classList.remove("active")
-    );
-    pillAll.classList.add("active");
-    applyFilters();
-  });
-  bar.appendChild(pillAll);
-
-  // Pills generi
-  FILTER_GENRES.forEach((genre) => {
-    const pill = document.createElement("button");
-    pill.classList.add("filter-pill");
-    pill.dataset.genre = genre;
-    pill.textContent = genre;
-    pill.addEventListener("click", () => {
-      if (activeGenre === genre) {
-        activeGenre = null;
-        pill.classList.remove("active");
-        pillAll.classList.add("active");
-      } else {
-        activeGenre = genre;
-        bar.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-        pill.classList.add("active");
-      }
-      applyFilters();
-    });
-    bar.appendChild(pill);
-  });
-
-  // inserisci dopo l'h2
-  h2.insertAdjacentElement("afterend", bar);
-};
 /* ============================ 7. Inizializzazione ============================ */
 
 /*
@@ -906,7 +832,7 @@ const initPage = (activePage) => {
 
   setupCarousels();
 //CHIAMA RENDER PILLS perchè initPage è la funzione che viene chiamata per prima su ogni pagina 
-if (activePage === "home" || activePage === "search") {
+if (activePage === "home") {
   renderFilterPills(activePage);
 }
   return player;
