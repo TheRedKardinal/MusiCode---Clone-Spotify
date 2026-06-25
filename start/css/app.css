@@ -803,12 +803,47 @@ button {
 .register-overlay {
   position: fixed;
   inset: 0;
+  display: none;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.register-overlay.open {
+  display: flex;
+  flex-direction: column;
+}
+
+.register-box {
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  background-color: black;
+  padding: 40px;
+  border: 2px solid #f7d800;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-close {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-weight: 600;
+  font-size: 13px;
+  background-color: #f7d800;
+  border: 2px solid #f7d800;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .register-field {
   display: flex;
   flex-direction: column;
-  width: 20%;
+  margin-bottom: 20px;
 }
 
 .register-submit {
