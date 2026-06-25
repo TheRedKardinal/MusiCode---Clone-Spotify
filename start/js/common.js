@@ -648,6 +648,22 @@ const pillDropdown = () => {
     dropdown.classList.remove("open");
   });
 };
+// render della pill in base al'account
+const renderUserPill = () => {
+  const userLogged = document.querySelector(".logged-user");
+  const noLogged = document.querySelector(".no-logged");
+  const account = getCurrentUser();
+  if (account === null) {
+    noLogged.style.display = "flex";
+    userLogged.style.display = "none";
+  } else {
+    noLogged.style.display = "none";
+    userLogged.style.display = "flex";
+
+    const nomeUtente = document.querySelector(".user-pill-name");
+    nomeUtente.textContent = account.username;
+  }
+};
 
 /* ============================ 7. Inizializzazione ============================ */
 
@@ -668,6 +684,7 @@ const initPage = (activePage) => {
 
   setupCarousels();
   pillDropdown();
+  renderUserPill();
 
   return player;
 };
