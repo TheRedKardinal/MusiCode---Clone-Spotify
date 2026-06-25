@@ -215,15 +215,18 @@ class Player {
     this.elTitle = null;
     this.elArtist = null;
     this.elBtnToggle = null;
-    this.elProgressFill = null;
+    this.elProgressSlider = null;
     this.elTimeCurrent = null;
     this.elTimeTotal = null;
     this.elVolumeFill = null;
 
     this.audio.addEventListener("timeupdate", () => {
-      if (!this.audio.duration) return;
+      if (!this.audio.duration || this._isSeeking) return;
       const percent = (this.audio.currentTime / this.audio.duration) * 100;
-      if (this.elProgressFill) this.elProgressFill.style.width = `${percent}%`;
+      if (this.elProgressSlider) {
+        this.elProgressSlider.value = percent;
+        this.elProgressSlider.style.setProperty("--percent", `${percent}%`);
+      }
       if (this.elTimeCurrent)
         this.elTimeCurrent.textContent = formatTime(
           this.audio.currentTime * 1000,
@@ -268,9 +271,7 @@ class Player {
         </div>
         <div class="player-progress">
           <span id="time-current">0:00</span>
-          <div class="progress-bar" id="progress-bar">
-            <div class="progress-fill" id="progress-fill"></div>
-          </div>
+          <input type="range" id="progress-slider" class="progress-slider" min="0" max="100" step="0.1" value="0" aria-label="Avanzamento brano"/>
           <span id="time-total">0:00</span>
         </div>
       </div>
@@ -285,7 +286,7 @@ class Player {
     this.elTitle = document.querySelector("#player-title");
     this.elArtist = document.querySelector("#player-artist");
     this.elBtnToggle = document.querySelector("#btn-toggle");
-    this.elProgressFill = document.querySelector("#progress-fill");
+    this.elProgressSlider = document.querySelector("#progress-slider");
     this.elTimeCurrent = document.querySelector("#time-current");
     this.elTimeTotal = document.querySelector("#time-total");
     this.elVolumeSlider = document.querySelector("#volume-slider");
@@ -314,11 +315,43 @@ class Player {
         btnRepeat.classList.toggle("btn-active", this.isRepeating);
       });
 
-    const progressBar = document.querySelector("#progress-bar");
-    progressBar.addEventListener("click", (e) => {
-      const percent = e.offsetX / progressBar.clientWidth; // 0..1 dove clicchi
-      this.seek(percent);
-    });
+    if (this.elProgressSlider) {
+      const progressTooltip = document.createElement("div");
+      progressTooltip.classList.add("progress-tooltip");
+      this.elProgressSlider.parentElement.appendChild(progressTooltip);
+
+      this.elProgressSlider.addEventListener("mousemove", (e) => {
+        if (!this.audio.duration) return;
+        const sliderRect = this.elProgressSlider.getBoundingClientRect();
+        const containerRect = this.elProgressSlider.parentElement.getBoundingClientRect();
+        const percent = Math.min(1, Math.max(0, (e.clientX - sliderRect.left) / sliderRect.width));
+        progressTooltip.textContent = formatTime(percent * this.audio.duration * 1000);
+        progressTooltip.style.display = "block";
+        progressTooltip.style.left = `${e.clientX - containerRect.left}px`;
+      });
+
+      this.elProgressSlider.addEventListener("mouseleave", () => {
+        progressTooltip.style.display = "none";
+      });
+
+      this.elProgressSlider.addEventListener("pointerdown", () => {
+        this._isSeeking = true;
+        this._wasPlaying = !this.audio.paused;
+        this.audio.pause();
+      });
+      this.elProgressSlider.addEventListener("input", (e) => {
+        this.elProgressSlider.style.setProperty("--percent", `${e.target.value}%`);
+      });
+      this.elProgressSlider.addEventListener("change", (e) => {
+        this._isSeeking = false;
+        this.seek(parseFloat(e.target.value) / 100);
+        if (this._wasPlaying) {
+          this.audio.play().catch(() => {});
+          this.isPlaying = true;
+          if (this.elBtnToggle) this.elBtnToggle.textContent = "⏸";
+        }
+      });
+    }
 
     // Slider volume → setVolume
     if (this.elVolumeSlider) {
@@ -345,7 +378,7 @@ class Player {
     this.setVolume(0.3);
   }
 
-  async play(track) {
+  async play(track, auto = false) {
     if (!track || !track.previewUrl) return; // niente brano o niente preview -> esci
 
     // 1) salva brano corrente
@@ -392,6 +425,13 @@ class Player {
     document
       .querySelectorAll(`.card[data-track-id="${track.id}"]`)
       .forEach((c) => c.classList.add("is-playing"));
+
+    // pannello laterale col brano IN RIPRODUZIONE (non quello cliccato):
+    // click utente -> apri; auto-advance -> aggiorna solo se già aperto
+    if (window.nowPlaying) {
+      if (auto) window.nowPlaying.render(this.currentTrack);
+      else window.nowPlaying.show(this.currentTrack);
+    }
   }
 
   togglePlay() {
@@ -458,7 +498,7 @@ class Player {
     } else {
       this.currentIndex = (this.currentIndex + 1) % this.queue.length;
     }
-    this.play(this.queue[this.currentIndex]);
+    this.play(this.queue[this.currentIndex], true);
   }
 
   playPrev() {
@@ -469,7 +509,7 @@ class Player {
     }
     this.currentIndex =
       (this.currentIndex - 1 + this.queue.length) % this.queue.length;
-    this.play(this.queue[this.currentIndex]);
+    this.play(this.queue[this.currentIndex], true);
   }
 }
 
@@ -496,9 +536,6 @@ const addToHistory = (track) => {
 
   const tagliato = newArray.slice(0, MAX_HISTORY);
   localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(tagliato));
-
-  // avvisa la pagina che la libreria è cambiata (la home si ridisegna)
-  document.dispatchEvent(new CustomEvent("library:changed"));
 
   // TODO: array = getHistory(); rimuovi eventuale duplicato (per id);
   //       metti track in testa; tronca a MAX_HISTORY; salva
@@ -594,10 +631,10 @@ const renderSidebar = (activePage) => {
   const sidebar = document.querySelector(".sidebar");
   if (!sidebar) return;
   sidebar.innerHTML = `
-    <div class="brand">
+    <a href="index.html" class="brand">
       <img src="assets/Nuovo_Logo.png" alt="EpiTunes Logo" class="brand-logo" />
       <span class="brand-text">usiCode</span>
-    </div>
+    </a>
     <nav class="sidebar-nav">
       <a href="index.html"  data-page="home"   ${activePage === "home" ? 'class="active"' : ""}><span class="ico"><i class="bi bi-house-door-fill"></i></span><span>Home</span></a>
       <a href="search.html" data-page="search" ${activePage === "search" ? 'class="active"' : ""}><span class="ico"><i class="bi bi-search"></i></span><span>Cerca</span></a>
@@ -825,6 +862,19 @@ const initPage = (activePage) => {
   const player = new Player();
   player.mount();
   window.player = player;
+
+  // pannello laterale "In riproduzione"
+  window.nowPlaying = createNowPlayingPanel();
+
+  // click sul brano in basso a sinistra -> apre/chiude il pannello (brano in riproduzione)
+  const playerTrack = document.querySelector(".player-track");
+  if (playerTrack) {
+    playerTrack.style.cursor = "pointer";
+    playerTrack.addEventListener("click", () => {
+      if (player.currentTrack) window.nowPlaying.render(player.currentTrack);
+      window.nowPlaying.toggle();
+    });
+  }
 
   const [btnBack, btnForward] = document.querySelectorAll(".nav-btn");
   if (btnBack) btnBack.addEventListener("click", () => history.back());
