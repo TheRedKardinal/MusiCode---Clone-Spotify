@@ -48,6 +48,45 @@
 
       <footer class="player"></footer>
     </div>
+    <div class="register-overlay" id="register-modal">
+      <div class="register-box">
+        <button class="register-close" type="button">X</button>
+        <h2>Crea un account</h2>
+        <form id="register-form">
+          <div class="register-field">
+            <label for="register-name">Nome</label>
+            <input type="text" id="register-name" name="name" />
+          </div>
+          <div class="register-field">
+            <label for="register-surname">Cognome</label>
+            <input type="text" id="register-surname" name="surname" />
+          </div>
+          <div class="register-field">
+            <label for="register-username">Nome utente</label>
+            <input
+              type="text"
+              id="register-username"
+              name="username"
+              required
+            />
+          </div>
+          <div class="register-field">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" name="email" required />
+          </div>
+          <div class="register-field">
+            <label for="register-password">Password</label>
+            <input
+              type="password"
+              id="register-password"
+              name="password"
+              required
+            />
+          </div>
+          <button type="submit" class="register-submit">Crea account</button>
+        </form>
+      </div>
+    </div>
 
     <audio id="audio-element"></audio>
 

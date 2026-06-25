@@ -685,6 +685,30 @@ const modal = () => {
       overlayModal.classList.remove("open");
     }
   });
+  // registrazione dei dati nel form, submit, salvataggio e cambio pill
+  const form = document.getElementById("register-form");
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nomeRegistrato = document.getElementById("register-name").value;
+    const cognomeRegistrato = document.getElementById("register-surname").value;
+    const usernameRegistrato =
+      document.getElementById("register-username").value;
+    const emailRegistrato = document.getElementById("register-email").value;
+    const passwordRegistrato =
+      document.getElementById("register-password").value;
+
+    const datiUtente = {
+      name: nomeRegistrato,
+      surname: cognomeRegistrato,
+      username: usernameRegistrato,
+      email: emailRegistrato,
+      password: passwordRegistrato,
+    };
+
+    registerUser(datiUtente);
+    renderUserPill();
+    overlayModal.classList.remove("open");
+  });
 };
 /* ============================ 7. Inizializzazione ============================ */
 
