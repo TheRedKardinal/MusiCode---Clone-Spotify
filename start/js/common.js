@@ -664,7 +664,28 @@ const renderUserPill = () => {
     nomeUtente.textContent = account.username;
   }
 };
+// mostra/nascondi modale
+const modal = () => {
+  const noLoggedpill = document.querySelector(".no-logged");
+  const registrati = noLoggedpill.querySelector(".user-pill");
+  const overlayModal = document.getElementById("register-modal");
+  const closeBtn = document.querySelector(".register-close");
 
+  registrati.addEventListener("click", (e) => {
+    e.stopPropagation();
+    overlayModal.classList.add("open");
+  });
+
+  closeBtn.addEventListener("click", (e) => {
+    overlayModal.classList.remove("open");
+  });
+
+  overlayModal.addEventListener("click", (e) => {
+    if (e.target === overlayModal) {
+      overlayModal.classList.remove("open");
+    }
+  });
+};
 /* ============================ 7. Inizializzazione ============================ */
 
 /*
@@ -685,6 +706,7 @@ const initPage = (activePage) => {
   setupCarousels();
   pillDropdown();
   renderUserPill();
+  modal();
 
   return player;
 };
