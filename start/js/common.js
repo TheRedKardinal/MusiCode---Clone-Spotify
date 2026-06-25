@@ -1087,6 +1087,7 @@ const modal = () => {
 
   registrati.addEventListener("click", (e) => {
     e.stopPropagation();
+    document.getElementById("login-modal").classList.remove("open");
     overlayModal.classList.add("open");
   });
 
@@ -1135,6 +1136,7 @@ const loginModal = () => {
 
   accedi.addEventListener("click", (e) => {
     e.stopPropagation();
+    document.getElementById("register-modal").classList.remove("open");
     loginOverlay.classList.add("open");
   });
 
