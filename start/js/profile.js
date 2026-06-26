@@ -111,4 +111,63 @@ if (account === null) {
   };
 
   renderFavs();
+  // carosello di consigli randomici
+  const generi = ["pop", "rock", "jazz", "latin", "metal", "indie"];
+
+  // regola fissa Math
+  // Math.floor(Math.random() * array.length)
+  const renderSuggestions = async () => {
+    const indiceRandom = Math.floor(Math.random() * generi.length);
+    const genereRandom = generi[indiceRandom];
+
+    const dati = await fetchJSON(
+      `${API_BASE}/search?term=${genereRandom}&entity=song&limit=12`,
+    );
+
+    const brani = dati.results.map((raw) => new Track(raw));
+
+    // creazione grafica carosello nuovo
+    const profileSugg = document.getElementById("profile-suggestions");
+    const suggestionsCarousel = document.createElement("section");
+    suggestionsCarousel.classList.add("row");
+
+    const carouselH2 = document.createElement("h2");
+    carouselH2.textContent = "I tuoi suggeriti";
+
+    suggestionsCarousel.appendChild(carouselH2);
+
+    const divCarousel = document.createElement("div");
+    divCarousel.classList.add("grid");
+
+    suggestionsCarousel.appendChild(divCarousel);
+
+    brani.forEach((track) => {
+      const card = document.createElement("div");
+      card.classList.add("card");
+
+      const imageWrap = document.createElement("div");
+      imageWrap.classList.add("card-image-wrap");
+
+      const img = document.createElement("img");
+      img.src = track.cover;
+      img.alt = track.title;
+      imageWrap.appendChild(img);
+      card.appendChild(imageWrap);
+
+      const titolo = document.createElement("p");
+      titolo.classList.add("card-title");
+      titolo.textContent = track.title;
+      card.appendChild(titolo);
+
+      const artista = document.createElement("p");
+      artista.classList.add("card-sub");
+      artista.textContent = track.artist;
+      card.appendChild(artista);
+
+      divCarousel.appendChild(card);
+    });
+
+    profileSugg.appendChild(suggestionsCarousel);
+  };
+  renderSuggestions();
 }

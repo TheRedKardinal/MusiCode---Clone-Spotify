@@ -626,6 +626,7 @@ const loginUser = (username, password) => {
 };
 //funzione di logout
 const logoutUser = () => {
+  window.location.href = "index.html";
   return localStorage.removeItem(STORAGE_KEY_SESSION);
 };
 
