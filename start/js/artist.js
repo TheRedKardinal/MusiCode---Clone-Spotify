@@ -153,10 +153,21 @@ const loadArtist = async () => {
       trackNum.classList.add("track-num");
       trackNum.textContent = index + 1;
 
-      // Titolo traccia
+      // Cover + titolo traccia
+      const trackTitleWrap = document.createElement("div");
+      trackTitleWrap.classList.add("track-title-wrap");
+
+      const trackCover = document.createElement("img");
+      trackCover.classList.add("track-cover");
+      trackCover.src = track.artworkUrl100 || "";
+      trackCover.alt = "";
+
       const trackTitle = document.createElement("span");
       trackTitle.classList.add("track-title");
       trackTitle.textContent = track.trackName;
+
+      trackTitleWrap.appendChild(trackCover);
+      trackTitleWrap.appendChild(trackTitle);
 
       // Durata approssimativa o fissa (visto che trackTimeMillis potrebbe non esserci sempre)
       const trackTime = document.createElement("span");
@@ -189,7 +200,7 @@ const loadArtist = async () => {
       });
 
       trackRow.appendChild(trackNum);
-      trackRow.appendChild(trackTitle);
+      trackRow.appendChild(trackTitleWrap);
       trackRow.appendChild(trackTime);
       trackRow.appendChild(btnFav);
 

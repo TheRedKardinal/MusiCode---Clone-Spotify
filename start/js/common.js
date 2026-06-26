@@ -391,6 +391,29 @@ class Player {
     // --
 
     this.setVolume(0.3);
+
+    // Swipe su mobile: sinistra = traccia avanti, destra = traccia indietro
+    const mainEl = document.querySelector(".main");
+    if (mainEl) {
+      let swipeStartX = 0;
+      let swipeStartY = 0;
+      mainEl.addEventListener("touchstart", (e) => {
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+      }, { passive: true });
+      mainEl.addEventListener("touchend", (e) => {
+        const deltaX = e.changedTouches[0].clientX - swipeStartX;
+        const deltaY = e.changedTouches[0].clientY - swipeStartY;
+        // ignora se il gesto è più verticale che orizzontale
+        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+        // ignora swipe troppo corti
+        if (Math.abs(deltaX) < 60) return;
+        // ignora se il touch è su un carousel orizzontale
+        if (e.target.closest(".grid")) return;
+        if (deltaX < 0) this.playNext();
+        else this.playPrev();
+      }, { passive: true });
+    }
   }
 
   async play(track, auto = false) {
@@ -1245,6 +1268,28 @@ const initPage = (activePage) => {
   const [btnBack, btnForward] = document.querySelectorAll(".nav-btn");
   if (btnBack) btnBack.addEventListener("click", () => history.back());
   if (btnForward) btnForward.addEventListener("click", () => history.forward());
+
+  // Barra di navigazione mobile (visibile solo su ≤576px via CSS)
+  const appEl = document.querySelector(".app");
+  if (appEl) {
+    const mobileNav = document.createElement("nav");
+    mobileNav.className = "mobile-nav";
+    mobileNav.innerHTML = `
+      <a href="index.html" ${activePage === "home" ? 'class="active"' : ""}>
+        <span class="ico"><i class="bi bi-house-door-fill"></i></span>
+        <span>Home</span>
+      </a>
+      <a href="search.html" ${activePage === "search" ? 'class="active"' : ""}>
+        <span class="ico"><i class="bi bi-search"></i></span>
+        <span>Cerca</span>
+      </a>
+      <a href="favourites.html" ${activePage === "favourites" ? 'class="active"' : ""}>
+        <span class="ico"><i class="bi bi-heart-fill"></i></span>
+        <span>Preferiti</span>
+      </a>
+    `;
+    appEl.appendChild(mobileNav);
+  }
 
   setupCarousels();
   pillDropdown();
