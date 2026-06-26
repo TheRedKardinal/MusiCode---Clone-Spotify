@@ -398,40 +398,58 @@ class Player {
 
     // Swipe sul player footer: sinistra = avanti, destra = indietro
     let playerSwipeStartX = 0;
-    footer.addEventListener("touchstart", (e) => {
-      playerSwipeStartX = e.touches[0].clientX;
-    }, { passive: true });
-    footer.addEventListener("touchend", (e) => {
-      const deltaX = e.changedTouches[0].clientX - playerSwipeStartX;
-      if (Math.abs(deltaX) < 60) return;
-      // è stato uno swipe: impedisci che il click successivo apra il pannello
-      this._justSwiped = true;
-      setTimeout(() => { this._justSwiped = false; }, 350);
-      if (deltaX < 0) this.playNext();
-      else this.playPrev();
-    }, { passive: true });
+    footer.addEventListener(
+      "touchstart",
+      (e) => {
+        playerSwipeStartX = e.touches[0].clientX;
+      },
+      { passive: true },
+    );
+    footer.addEventListener(
+      "touchend",
+      (e) => {
+        const deltaX = e.changedTouches[0].clientX - playerSwipeStartX;
+        if (Math.abs(deltaX) < 60) return;
+        // è stato uno swipe: impedisci che il click successivo apra il pannello
+        this._justSwiped = true;
+        setTimeout(() => {
+          this._justSwiped = false;
+        }, 350);
+        if (deltaX < 0) this.playNext();
+        else this.playPrev();
+      },
+      { passive: true },
+    );
 
     // Swipe su mobile: sinistra = traccia avanti, destra = traccia indietro
     const mainEl = document.querySelector(".main");
     if (mainEl) {
       let swipeStartX = 0;
       let swipeStartY = 0;
-      mainEl.addEventListener("touchstart", (e) => {
-        swipeStartX = e.touches[0].clientX;
-        swipeStartY = e.touches[0].clientY;
-      }, { passive: true });
-      mainEl.addEventListener("touchend", (e) => {
-        const deltaX = e.changedTouches[0].clientX - swipeStartX;
-        const deltaY = e.changedTouches[0].clientY - swipeStartY;
-        // ignora se il gesto è più verticale che orizzontale
-        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
-        // ignora swipe troppo corti
-        if (Math.abs(deltaX) < 60) return;
-        // ignora se il touch è su un carousel orizzontale
-        if (e.target.closest(".grid")) return;
-        if (deltaX < 0) this.playNext();
-        else this.playPrev();
-      }, { passive: true });
+      mainEl.addEventListener(
+        "touchstart",
+        (e) => {
+          swipeStartX = e.touches[0].clientX;
+          swipeStartY = e.touches[0].clientY;
+        },
+        { passive: true },
+      );
+      mainEl.addEventListener(
+        "touchend",
+        (e) => {
+          const deltaX = e.changedTouches[0].clientX - swipeStartX;
+          const deltaY = e.changedTouches[0].clientY - swipeStartY;
+          // ignora se il gesto è più verticale che orizzontale
+          if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+          // ignora swipe troppo corti
+          if (Math.abs(deltaX) < 60) return;
+          // ignora se il touch è su un carousel orizzontale
+          if (e.target.closest(".grid")) return;
+          if (deltaX < 0) this.playNext();
+          else this.playPrev();
+        },
+        { passive: true },
+      );
     }
   }
 
@@ -595,14 +613,20 @@ const addToHistory = (track) => {
   //       metti track in testa; tronca a MAX_HISTORY; salva
 };
 
+// chiave dei preferiti correlata all'account loggato (bucket "guest" se non loggato)
+const getFavouritesKey = () => {
+  const account = getCurrentUser();
+  return account
+    ? `${STORAGE_KEY_FAVOURITES}_${account.username}`
+    : `${STORAGE_KEY_FAVOURITES}_guest`;
+};
+
 const getFavourites = () => {
-  const preferiti = localStorage.getItem(STORAGE_KEY_FAVOURITES);
+  const preferiti = localStorage.getItem(getFavouritesKey());
   return JSON.parse(preferiti) || [];
-  // TODO: come getHistory ma con STORAGE_KEY_FAVOURITES
 };
 
 const isFavourite = (trackId) => {
-  // TODO: return getFavourites().some(t => t.id === trackId)
   return getFavourites().some((t) => t.id === trackId);
 };
 
@@ -613,7 +637,7 @@ const toggleFavourite = (track) => {
     nuovoArray = array.filter((t) => t.id !== track.id);
   } else nuovoArray = [track, ...array];
 
-  localStorage.setItem(STORAGE_KEY_FAVOURITES, JSON.stringify(nuovoArray));
+  localStorage.setItem(getFavouritesKey(), JSON.stringify(nuovoArray));
 
   // aggiorna subito la sidebar, senza ricaricare la pagina
   renderSidebarFavs();
@@ -666,6 +690,7 @@ const loginUser = (username, password) => {
 };
 //funzione di logout
 const logoutUser = () => {
+  window.location.href = "index.html";
   return localStorage.removeItem(STORAGE_KEY_SESSION);
 };
 
@@ -962,7 +987,13 @@ const createNowPlayingPanel = () => {
   npBtnRepeat.setAttribute("aria-label", "Ripeti");
   npBtnRepeat.innerHTML = '<i class="bi bi-repeat"></i>';
 
-  npCtrlRow.append(npBtnShuffle, npBtnPrev, npBtnToggle, npBtnNext, npBtnRepeat);
+  npCtrlRow.append(
+    npBtnShuffle,
+    npBtnPrev,
+    npBtnToggle,
+    npBtnNext,
+    npBtnRepeat,
+  );
   npControls.appendChild(npCtrlRow);
   npControls.appendChild(npProgress);
 
@@ -1207,16 +1238,20 @@ const pillDropdown = () => {
   const pillUtente = userLogged.querySelector(".user-pill");
   const dropdown = document.querySelector(".user-dropdown");
   const [profilo, esci] = dropdown.querySelectorAll("li");
-
+  // apertura
   pillUtente.addEventListener("click", (e) => {
     dropdown.classList.toggle("open");
     e.stopPropagation();
   });
-
+  // chiusura pill
   document.addEventListener("click", (e) => {
     dropdown.classList.remove("open");
   });
-
+  // click profilo
+  profilo.addEventListener("click", (e) => {
+    window.location.href = "profile.html";
+  });
+  // click logout
   esci.addEventListener("click", (e) => {
     logoutUser();
     renderUserPill();
@@ -1320,6 +1355,8 @@ const loginModal = () => {
     }
 
     renderUserPill();
+    renderSidebarFavs();
+    document.dispatchEvent(new CustomEvent("library:changed"));
     loginOverlay.classList.remove("open");
     loginForm.reset();
   });
@@ -1399,7 +1436,8 @@ const initPage = (activePage) => {
         e.target.closest(".btn-play") ||
         e.target.closest(".btn-ctrl") ||
         e.target.closest(".player-right")
-      ) return;
+      )
+        return;
       e.stopPropagation();
       if (player.currentTrack) window.nowPlaying.render(player.currentTrack);
       window.nowPlaying.toggle();
