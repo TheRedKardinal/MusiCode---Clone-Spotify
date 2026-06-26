@@ -181,22 +181,27 @@ const loadArtist = async () => {
         trackTime.textContent = "3:30"; // Fallback standard
       }
 
-      // Bottone cuoricino preferiti
+      // Bottone preferiti
       const trackModel = trackObjs[index];
+
+      const setFavIcon = (btn, isFav) => {
+        btn.innerHTML = isFav
+          ? '<i class="bi bi-check-circle-fill" style="color:var(--success)"></i>'
+          : '<i class="bi bi-plus-circle"></i>';
+      };
 
       const btnFav = document.createElement("button");
       btnFav.classList.add("track-fav");
-      // stato iniziale letto dal localStorage
       const favInit = isFavourite(trackModel.id);
-      btnFav.textContent = favInit ? "♥" : "♡";
       btnFav.classList.toggle("is-fav", favInit);
+      setFavIcon(btnFav, favInit);
 
       btnFav.addEventListener("click", (e) => {
-        e.stopPropagation(); // Evita che cliccando il cuore parta la canzone
+        e.stopPropagation();
         toggleFavourite(trackModel);
         const fav = isFavourite(trackModel.id);
-        btnFav.classList.toggle("is-fav", fav); // .is-fav cambia il colore in rosso
-        btnFav.textContent = fav ? "♥" : "♡";
+        btnFav.classList.toggle("is-fav", fav);
+        setFavIcon(btnFav, fav);
       });
 
       trackRow.appendChild(trackNum);

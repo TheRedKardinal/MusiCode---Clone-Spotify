@@ -909,6 +909,22 @@ button {
   display: none;
 }
 
+/* Logo topbar (solo mobile ≤576px) */
+.topbar-logo {
+  display: none;
+}
+
+@media (max-width: 576px) {
+  .nav-btn {
+    display: none;
+  }
+  .topbar-logo {
+    display: block;
+    height: 44px;
+    width: auto;
+  }
+}
+
 @media (max-width: 576px) {
   .app {
     grid-template-columns: 0 1fr;
