@@ -617,14 +617,20 @@ const addToHistory = (track) => {
   //       metti track in testa; tronca a MAX_HISTORY; salva
 };
 
+// chiave dei preferiti correlata all'account loggato (bucket "guest" se non loggato)
+const getFavouritesKey = () => {
+  const account = getCurrentUser();
+  return account
+    ? `${STORAGE_KEY_FAVOURITES}_${account.username}`
+    : `${STORAGE_KEY_FAVOURITES}_guest`;
+};
+
 const getFavourites = () => {
-  const preferiti = localStorage.getItem(STORAGE_KEY_FAVOURITES);
+  const preferiti = localStorage.getItem(getFavouritesKey());
   return JSON.parse(preferiti) || [];
-  // TODO: come getHistory ma con STORAGE_KEY_FAVOURITES
 };
 
 const isFavourite = (trackId) => {
-  // TODO: return getFavourites().some(t => t.id === trackId)
   return getFavourites().some((t) => t.id === trackId);
 };
 
@@ -635,7 +641,7 @@ const toggleFavourite = (track) => {
     nuovoArray = array.filter((t) => t.id !== track.id);
   } else nuovoArray = [track, ...array];
 
-  localStorage.setItem(STORAGE_KEY_FAVOURITES, JSON.stringify(nuovoArray));
+  localStorage.setItem(getFavouritesKey(), JSON.stringify(nuovoArray));
 
   // aggiorna subito la sidebar, senza ricaricare la pagina
   renderSidebarFavs();
