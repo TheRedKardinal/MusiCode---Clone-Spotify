@@ -600,6 +600,20 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.track-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.track-cover {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
 .track-time {
   color: var(--text-secondary);
   text-align: right;
@@ -877,23 +891,99 @@ button {
   }
 }
 
-@media (max-width: 540px) {
+/* Mobile nav: nascosta di default, visibile solo su ≤576px */
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 576px) {
   .app {
     grid-template-columns: 0 1fr;
+    grid-template-rows: 1fr 90px 56px;
+    grid-template-areas:
+      "sidebar main"
+      "player  player"
+      "mobile-nav mobile-nav";
   }
   .sidebar {
     display: none;
   }
   .player {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr auto;
     gap: 8px;
+    position: relative;
   }
   .player-right {
     display: none;
   }
+  .player-center {
+    flex-direction: row;
+    gap: 0;
+  }
+  #btn-shuffle,
+  #btn-prev,
+  #btn-next,
+  #btn-repeat {
+    display: none;
+  }
+  .btn-play {
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 26px;
+    width: 40px;
+    height: 40px;
+  }
+  .player-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    gap: 0;
+  }
+  #time-current,
+  #time-total {
+    display: none;
+  }
+  #progress-slider {
+    width: 100%;
+    height: 3px;
+    border-radius: 0;
+  }
   .grid > .card {
     flex-basis: 140px;
     width: 140px;
+  }
+
+  /* Barra di navigazione mobile */
+  .mobile-nav {
+    display: flex;
+    grid-area: mobile-nav;
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--border);
+    justify-content: space-around;
+    align-items: center;
+  }
+  .mobile-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 24px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+  }
+  .mobile-nav a .ico {
+    font-size: 22px;
+  }
+  .mobile-nav a.active,
+  .mobile-nav a:hover {
+    color: var(--text-primary);
   }
 }
 
@@ -1132,7 +1222,7 @@ button {
   border-radius: 3px;
 }
 
-@media (max-width: 540px) {
+@media (max-width: 576px) {
   .now-playing {
     bottom: 0;
     width: 100vw;
