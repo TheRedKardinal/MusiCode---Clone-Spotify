@@ -1205,3 +1205,44 @@ button {
 .div-info p {
   color: rgb(198, 196, 196);
 }
+
+#profile-favs h2 {
+  margin-left: 15px;
+}
+
+#profile-favs .track-row {
+  display: grid;
+  grid-template-columns: 32px 32px 1fr 250px 1fr 60px 32px;
+}
+
+#profile-favs .track-time {
+  grid-column: 6;
+}
+
+#profile-favs .track-fav {
+  grid-column: 7;
+}
+
+.track-cover {
+  height: 30px;
+  width: 30px;
+}
+
+.track-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.track-title-wrap .track-artist {
+  color: rgb(198, 196, 196);
+  font-size: 0.9rem;
+}
+
+.track-album {
+  color: rgb(198, 196, 196);
+  text-align: center;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
