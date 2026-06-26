@@ -1383,6 +1383,24 @@ const initPage = (activePage) => {
     });
   });
 
+  // Click su tutto il player footer (solo mobile ≤576px) → apre il pannello
+  // Esclusi: barra di riproduzione, tasto play e controlli secondari
+  const playerFooter = document.querySelector(".player");
+  if (playerFooter) {
+    playerFooter.addEventListener("click", (e) => {
+      if (window.innerWidth > 576) return;
+      if (
+        e.target.closest(".player-progress") ||
+        e.target.closest(".btn-play") ||
+        e.target.closest(".btn-ctrl") ||
+        e.target.closest(".player-right")
+      ) return;
+      e.stopPropagation();
+      if (player.currentTrack) window.nowPlaying.render(player.currentTrack);
+      window.nowPlaying.toggle();
+    });
+  }
+
   // chiusura del pannello cliccando in un punto qualsiasi della pagina
   // che non sia il pannello stesso o gli elementi che lo aprono
   const nowPlayingPanel = document.querySelector("#now-playing");
