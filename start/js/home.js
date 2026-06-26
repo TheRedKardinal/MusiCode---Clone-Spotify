@@ -32,6 +32,20 @@ const getTopArtists = () => {
     .slice(0, 3);
 };
 
+const getTopGenres = () => {
+  const all = [...getHistory(), ...getFavourites()];
+  const counts = {};
+
+  all.forEach((track) => {
+    if (!track.genre) return;
+    counts[track.genre] = (counts[track.genre] || 0) + 1;
+  });
+
+  return Object.keys(counts)
+    .sort((a, b) => counts[b] - counts[a])
+    .slice(0, 3);
+};
+
 const home = document.querySelector(".home");
 
 /*
@@ -191,9 +205,14 @@ const loadHome = async () => {
 
   if (topArtists.length > 0) {
     const fetches = topArtists.flatMap((artist) => [
-      fetchJSON(`${API_BASE}/search?term=${encodeURIComponent(artist)}&entity=song&limit=12`),
-      fetchJSON(`${API_BASE}/search?term=${encodeURIComponent(artist)}&entity=album&limit=8`),
+      fetchJSON(
+        `${API_BASE}/search?term=${encodeURIComponent(artist)}&entity=song&limit=12`,
+      ),
+      fetchJSON(
+        `${API_BASE}/search?term=${encodeURIComponent(artist)}&entity=album&limit=8`,
+      ),
     ]);
+
 
     const results = await Promise.all(fetches);
 
@@ -209,8 +228,29 @@ const loadHome = async () => {
 
       if (albums.length > 0) {
         const rowAlbums = makeRow(`Album di ${artist}`);
-        albums.forEach((album) => rowAlbums.grid.appendChild(makeAlbumCard(album)));
+        albums.forEach((album) =>
+          rowAlbums.grid.appendChild(makeAlbumCard(album)),
+        );
         home.appendChild(rowAlbums.section);
+      }
+    });
+    const topGenres = getTopGenres();
+    const knownArtists = new Set(topArtists);
+        const genreFetches = topGenres.map((genre) =>
+      fetchJSON(`${API_BASE}/search?term=${encodeURIComponent(genre)}&entity=song&limit=20`)
+    );
+
+    const genreResults = await Promise.all(genreFetches);
+
+    topGenres.forEach((genre, i) => {
+      const songs = genreResults[i].results
+        .map((raw) => new Track(raw))
+        .filter((t) => !knownArtists.has(t.artist));
+
+      if (songs.length > 0) {
+        const rowDiscover = makeRow(`Scopri altro ${genre}`);
+        rowDiscover.grid.replaceChildren(...songs.map(makeCard));
+        home.appendChild(rowDiscover.section);
       }
     });
 
@@ -222,15 +262,21 @@ const loadHome = async () => {
     ]);
 
     const rowPop = makeRow("Suggerimenti pop");
-    rowPop.grid.replaceChildren(...pop.results.map((r) => new Track(r)).map(makeCard));
+    rowPop.grid.replaceChildren(
+      ...pop.results.map((r) => new Track(r)).map(makeCard),
+    );
     home.appendChild(rowPop.section);
 
     const rowRock = makeRow("Suggerimenti rock");
-    rowRock.grid.replaceChildren(...rock.results.map((r) => new Track(r)).map(makeCard));
+    rowRock.grid.replaceChildren(
+      ...rock.results.map((r) => new Track(r)).map(makeCard),
+    );
     home.appendChild(rowRock.section);
 
     const rowHits = makeRow("Suggerimenti hits");
-    rowHits.grid.replaceChildren(...hits.results.map((r) => new Track(r)).map(makeCard));
+    rowHits.grid.replaceChildren(
+      ...hits.results.map((r) => new Track(r)).map(makeCard),
+    );
     home.appendChild(rowHits.section);
   }
 };
