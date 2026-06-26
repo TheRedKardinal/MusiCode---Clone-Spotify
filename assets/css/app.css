@@ -537,10 +537,11 @@ button {
   font-weight: 700;
 }
 .hero-title {
-  font-size: clamp(32px, 6vw, 72px);
+  font-size: clamp(20px, 4vw, 48px);
   font-weight: 900;
   margin: 0;
-  line-height: 1.05;
+  line-height: 1.1;
+  word-break: break-word;
 }
 .hero-sub {
   color: var(--text-secondary);
@@ -1395,13 +1396,13 @@ button {
   width: 30px;
 }
 
-.track-title-wrap {
+#profile-favs .track-title-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-.track-title-wrap .track-artist {
+#profile-favs .track-title-wrap .track-artist {
   color: rgb(198, 196, 196);
   font-size: 0.9rem;
 }
