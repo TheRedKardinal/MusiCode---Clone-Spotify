@@ -1,5 +1,7 @@
 # MusiCode
 
+[🇬🇧 English](README.md) | 🇮🇹 Italiano
+
 Web app in stile Spotify realizzata durante la Build Week di Epicode. Permette di cercare brani, album e artisti, ascoltarne le preview audio, salvare i preferiti legati al proprio account e gestire un login/registrazione semplice basato su `localStorage`.
 
 ## Funzionalità
