@@ -1371,6 +1371,10 @@ button {
   grid-column: 7;
 }
 
+#profile-favs .track-fav.is-fav {
+  color: var(--success);
+}
+
 .track-cover {
   height: 30px;
   width: 30px;
@@ -1379,6 +1383,7 @@ button {
 .track-title-wrap {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .track-title-wrap .track-artist {
