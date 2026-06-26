@@ -312,4 +312,18 @@ document.addEventListener("library:changed", () => {
   refreshAllHearts();
 });
 
+const audioEl = document.querySelector("#audio-element");
+
+const syncAllPlayBtns = () => {
+  document.querySelectorAll(".card-play").forEach((btn) => {
+    const trackId = Number(btn.closest(".card")?.dataset.trackId);
+    const isCurrent = player.currentTrack?.id === trackId;
+    btn.textContent = isCurrent && !audioEl.paused ? ICON_PAUSE : ICON_PLAY;
+  });
+};
+
+audioEl.addEventListener("play", syncAllPlayBtns);
+audioEl.addEventListener("pause", syncAllPlayBtns);
+audioEl.addEventListener("ended", syncAllPlayBtns);
+
 loadHome();

@@ -483,11 +483,8 @@ class Player {
       .querySelectorAll(`.card[data-track-id="${track.id}"]`)
       .forEach((c) => c.classList.add("is-playing"));
 
-    // pannello laterale col brano IN RIPRODUZIONE (non quello cliccato):
-    // click utente -> apri; auto-advance -> aggiorna solo se già aperto
     if (window.nowPlaying) {
-      if (auto) window.nowPlaying.render(this.currentTrack);
-      else if (window.innerWidth > 576) window.nowPlaying.show(this.currentTrack);
+      window.nowPlaying.show(this.currentTrack);
     }
   }
 

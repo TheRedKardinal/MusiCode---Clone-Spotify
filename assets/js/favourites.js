@@ -18,10 +18,10 @@ const renderFavourites = () => {
 
   const title = document.createElement("h1");
   title.classList.add("hero-title");
-  const heartIcon = document.createElement("i");
-  heartIcon.className = "bi bi-heart-fill";
-  heartIcon.style.color = "var(--danger)";
-  title.appendChild(heartIcon);
+  const checkIcon = document.createElement("i");
+  checkIcon.className = "bi bi-check-circle-fill";
+  checkIcon.style.color = "var(--success)";
+  title.appendChild(checkIcon);
   title.append(" I tuoi preferiti");
 
   const sub = document.createElement("p");
@@ -90,7 +90,7 @@ const renderFavourites = () => {
 
     const btnFav = document.createElement("button");
     btnFav.classList.add("track-fav", "is-fav");
-    btnFav.textContent = "♥";
+    btnFav.innerHTML = '<i class="bi bi-check-circle-fill" style="color:var(--success)"></i>';
     btnFav.setAttribute("aria-label", "Rimuovi dai preferiti");
     btnFav.addEventListener("click", (e) => {
       e.stopPropagation();

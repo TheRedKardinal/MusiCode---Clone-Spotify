@@ -35,6 +35,7 @@ const gridArtists = document.querySelector("#grid-artists");
 const renderTrackCard = (track) => {
   const cardDiv = document.createElement("div");
   cardDiv.classList.add("card");
+  cardDiv.dataset.trackId = track.id;
 
   const imageWrap = document.createElement("div");
   imageWrap.classList.add("card-image-wrap");
@@ -56,8 +57,6 @@ const renderTrackCard = (track) => {
   cardPlay.textContent = ICON_PLAY;
   cardPlay.classList.add("card-play");
 
-  // Click su tutta la card (non solo sul bottone ▶) per riprodurre il brano:
-  // cardPlay non ha un suo listener separato, l'evento sale (bubbling) da lui a cardDiv.
   cardDiv.addEventListener("click", () => {
     if (track.albumId) {
       window.location.href = `album.html?id=${track.albumId}`;
@@ -68,11 +67,16 @@ const renderTrackCard = (track) => {
 
   cardPlay.addEventListener("click", (e) => {
     e.stopPropagation();
-    player.play(track);
+    if (player.currentTrack && player.currentTrack.id === track.id) {
+      player.togglePlay();
+    } else {
+      document.querySelectorAll(".card-play").forEach((btn) => (btn.textContent = ICON_PLAY));
+      player.play(track);
+      cardPlay.textContent = ICON_PAUSE;
+    }
   });
 
   cardDiv.appendChild(imageWrap);
-
   cardDiv.appendChild(cardTitle);
   cardDiv.appendChild(cardSub);
   cardDiv.appendChild(cardPlay);
@@ -274,3 +278,17 @@ if (localStorage.getItem(STORAGE_KEY_LAST_SEARCH) !== null) {
   input.value = lastSearch;
   doSearch(lastSearch);
 }
+
+const audioEl = document.querySelector("#audio-element");
+
+const syncAllPlayBtns = () => {
+  document.querySelectorAll(".card-play").forEach((btn) => {
+    const trackId = Number(btn.closest(".card")?.dataset.trackId);
+    const isCurrent = player.currentTrack?.id === trackId;
+    btn.textContent = isCurrent && !audioEl.paused ? ICON_PAUSE : ICON_PLAY;
+  });
+};
+
+audioEl.addEventListener("play", syncAllPlayBtns);
+audioEl.addEventListener("pause", syncAllPlayBtns);
+audioEl.addEventListener("ended", syncAllPlayBtns);
